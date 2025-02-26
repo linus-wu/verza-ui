@@ -1,0 +1,23 @@
+{
+  "name": "verza-ui",
+  "version": "1.0.0",
+  "author": "Linus",
+  "license": "MIT",
+  "description": "A modern UI component library",
+  "keywords": [
+    "ui",
+    "component",
+    "library",
+    "react",
+    "tailwind",
+    "verza"
+  ],
+  "main": "index.js",
+  "scripts": {},
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "pnpm@10.4.1"
+}

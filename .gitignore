@@ -1,0 +1,12 @@
+# Ignore dependencies
+node_modules/
+.pnpm-store/
+
+# Ignore build output
+dist/
+out/
+build/
+
+# Ignore logs & system files
+*.log
+.DS_Store
