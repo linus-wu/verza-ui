@@ -1,5 +1,5 @@
 export type VerzaConfig = {
-  useTypeScript: boolean;
+  typescript: boolean;
   paths: {
     components: string;
     utils: string;

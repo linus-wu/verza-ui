@@ -1,16 +1,10 @@
 import fs from "fs-extra";
 import path from "path";
 
-/**
- * 檢查指定路徑的檔案是否存在
- */
 export function checkFileExists(filePath: string): boolean {
   return fs.existsSync(path.join(process.cwd(), filePath));
 }
 
-/**
- * 從 package.json 檢查是否有指定依賴
- */
 export function hasDependency(dependencyName: string): boolean {
   try {
     const packageJsonPath = path.join(process.cwd(), "package.json");
@@ -30,9 +24,6 @@ export function hasDependency(dependencyName: string): boolean {
   }
 }
 
-/**
- * 讀取 JSON 檔案並返回物件
- */
 export function readJsonFile(filePath: string): any {
   try {
     const fullPath = path.join(process.cwd(), filePath);
@@ -45,9 +36,6 @@ export function readJsonFile(filePath: string): any {
   }
 }
 
-/**
- * 寫入 JSON 檔案
- */
 export function writeJsonFile(filePath: string, data: any): boolean {
   try {
     const fullPath = path.join(process.cwd(), filePath);
@@ -58,9 +46,6 @@ export function writeJsonFile(filePath: string, data: any): boolean {
   }
 }
 
-/**
- * 檢測項目框架類型
- */
 export function detectFrameworkType():
   | "nextjs"
   | "vite"
@@ -80,9 +65,6 @@ export function detectFrameworkType():
   return "unknown";
 }
 
-/**
- * 檢查是否使用 TypeScript
- */
 export function isUsingTypeScript(): boolean {
   const hasTsConfig = checkFileExists("tsconfig.json");
   const hasTypeScriptDependency = hasDependency("typescript");
@@ -90,9 +72,6 @@ export function isUsingTypeScript(): boolean {
   return hasTsConfig || hasTypeScriptDependency;
 }
 
-/**
- * 檢查項目中是否有 src 目錄
- */
 export function hasSrcDirectory(): boolean {
   return checkFileExists("src");
 }
