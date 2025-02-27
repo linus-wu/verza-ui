@@ -1,0 +1,59 @@
+# Auto detect text files and normalize line endings
+* text=auto eol=lf
+
+# Source code
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.json text
+*.css text
+*.scss text
+*.html text
+*.md text
+*.mdx text
+*.yml text
+*.yaml text
+
+# Image files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Font files
+*.eot binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+
+# Audio files
+*.mp3 binary
+*.wav binary
+
+# Video files
+*.mp4 binary
+*.webm binary
+
+# Documents
+*.pdf binary
+
+# Files excluded from language statistics
+*.json linguist-detectable=false
+*.lock linguist-detectable=false
+yarn.lock linguist-detectable=false
+package-lock.json linguist-detectable=false
+pnpm-lock.yaml linguist-detectable=false
+
+# Mark as binary files (no merging)
+*.lock binary
+package-lock.json binary
+yarn.lock binary
+pnpm-lock.yaml binary
+
+# Don't show diffs
+package-lock.json -diff
+yarn.lock -diff
+pnpm-lock.yaml -diff 
