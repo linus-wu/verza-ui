@@ -10,7 +10,6 @@ import {
 } from "../utils/registryApi";
 
 export async function addComponent(target: string) {
-  // Handle list command
   if (target === "list" || target === "--list" || target === "-l") {
     await listAvailableComponents();
     return;
@@ -26,7 +25,6 @@ export async function addComponent(target: string) {
   try {
     console.log(chalk.cyan(`🔍 Looking for component "${target}"...`));
 
-    // 驗證組件是否存在
     const isValidComponent = await validateComponent(target);
     if (!isValidComponent) {
       console.error(chalk.red(`❌ Component "${target}" not found.`));
@@ -36,7 +34,6 @@ export async function addComponent(target: string) {
       process.exit(1);
     }
 
-    // 獲取組件信息
     const componentInfo = await fetchComponentInfo(target);
     if (!componentInfo) {
       console.error(
@@ -50,7 +47,6 @@ export async function addComponent(target: string) {
       console.log(chalk.gray(`   ${componentInfo.description}`));
     }
 
-    // 檢查配置
     const verzaConfig = loadVerzaConfig();
     if (!verzaConfig) {
       console.error(
@@ -64,12 +60,10 @@ export async function addComponent(target: string) {
     const isTypeScriptProject = verzaConfig.typescript;
     const language = isTypeScriptProject ? "ts" : "js";
 
-    // 準備下載路徑
     const hasSrcFolder =
       verzaConfig.paths.components.includes("src/") ||
       fs.existsSync(path.join(process.cwd(), "src"));
 
-    // 將 @/ 轉換為實際路徑
     let actualComponentPath = verzaConfig.paths.components;
     if (actualComponentPath.startsWith("@/")) {
       const relativePath = actualComponentPath.replace("@/", "");
@@ -82,22 +76,20 @@ export async function addComponent(target: string) {
 
     console.log(chalk.cyan("📥 Downloading component files..."));
 
-    // 下載所有相關文件
     const downloadPromises = componentInfo.files.map(async (fileName) => {
-      // fileName 已經包含完整路徑，如 "components/button/Button.tsx"
       const pathParts = fileName.split("/");
-      const actualFileName = pathParts[pathParts.length - 1]; // 取得檔案名稱
+      const actualFileName = pathParts[pathParts.length - 1];
 
-      const adjustedFileName = actualFileName.replace(
-        /\.tsx?$/,
-        `.${language === "ts" ? "tsx" : "jsx"}`
-      );
+      let adjustedFileName = actualFileName;
+      if (!isTypeScriptProject) {
+        adjustedFileName = actualFileName
+          .replace(/\.tsx$/, ".jsx")
+          .replace(/\.ts$/, ".js");
+      } else if (actualFileName.endsWith(".jsx")) {
+        adjustedFileName = actualFileName.replace(/\.jsx$/, ".tsx");
+      }
 
-      // 構建正確的 repo URL
-      const repoUrl = `${REPO_BASE_URL}/${fileName.replace(
-        /\.tsx?$/,
-        `.${language === "ts" ? "tsx" : "jsx"}`
-      )}`;
+      const repoUrl = `${REPO_BASE_URL}/${fileName}`;
       const outputPath = path.join(baseComponentPath, adjustedFileName);
 
       console.log(chalk.gray(`  - Downloading ${adjustedFileName}...`));
@@ -108,7 +100,6 @@ export async function addComponent(target: string) {
 
     const downloadedFiles = await Promise.all(downloadPromises);
 
-    // 安裝外部依賴
     if (componentInfo.dependencies.external.length > 0) {
       console.log(chalk.cyan("📦 Installing dependencies..."));
       console.log(
@@ -119,7 +110,6 @@ export async function addComponent(target: string) {
       await installPackages(componentInfo.dependencies.external);
     }
 
-    // 檢查內部依賴
     if (componentInfo.dependencies.internal.length > 0) {
       console.log(chalk.yellow("⚠️  Internal dependencies required:"));
       componentInfo.dependencies.internal.forEach((dep) => {
@@ -135,14 +125,6 @@ export async function addComponent(target: string) {
     downloadedFiles.forEach((file) => {
       console.log(chalk.gray(`  - ${path.relative(process.cwd(), file)}`));
     });
-
-    // 顯示使用示例
-    console.log(chalk.cyan("\n📖 Usage:"));
-    console.log(
-      chalk.gray(
-        `import { ${componentInfo.name} } from '@/components/verza-ui/${componentInfo.name}';`
-      )
-    );
   } catch (error) {
     console.error(chalk.red(`❌ Failed to add component: ${error}`));
     process.exit(1);

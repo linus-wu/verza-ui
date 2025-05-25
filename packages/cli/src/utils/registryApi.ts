@@ -19,13 +19,9 @@ export interface RegistryResponse {
   version: string;
 }
 
-/**
- * 獲取可用的組件列表
- */
 export async function fetchComponentsList(): Promise<ComponentInfo[]> {
   console.log(chalk.gray("Fetching components list..."));
 
-  // 從 GitHub 獲取 registry.json
   try {
     const response = await axios.get<RegistryResponse>(REGISTRY_JSON_URL, {
       timeout: 10000,
@@ -46,9 +42,6 @@ export async function fetchComponentsList(): Promise<ComponentInfo[]> {
   }
 }
 
-/**
- * 獲取特定組件的詳細信息
- */
 export async function fetchComponentInfo(
   componentName: string
 ): Promise<ComponentInfo | null> {
@@ -68,19 +61,13 @@ export async function fetchComponentInfo(
   }
 }
 
-/**
- * 驗證組件是否存在
- */
 export async function validateComponent(
   componentName: string
 ): Promise<boolean> {
   const componentInfo = await fetchComponentInfo(componentName);
-  return componentInfo !== null;
+  return componentInfo !== null && componentInfo.category === "components";
 }
 
-/**
- * 回退的組件列表（當 API 不可用時）
- */
 function getFallbackComponentsList(): ComponentInfo[] {
   return [
     {
@@ -141,12 +128,13 @@ function getFallbackComponentsList(): ComponentInfo[] {
   ];
 }
 
-/**
- * 列出所有可用的組件
- */
 export async function listAvailableComponents(): Promise<void> {
   try {
-    const components = await fetchComponentsList();
+    const allComponents = await fetchComponentsList();
+
+    const components = allComponents.filter(
+      (component) => component.category === "components"
+    );
 
     console.log(chalk.cyan("\n📦 Available Components:\n"));
 
