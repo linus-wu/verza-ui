@@ -10,4 +10,10 @@ esbuild
     outfile: "dist/index.js",
     tsconfig: "tsconfig.json",
   })
-  .catch(() => process.exit(1));
+  .then(() => {
+    console.log("✅ Build completed successfully!");
+  })
+  .catch((error) => {
+    console.error("❌ Build failed:", error);
+    process.exit(1);
+  });

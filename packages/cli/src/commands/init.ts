@@ -3,16 +3,14 @@ import path from "path";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { VerzaConfig } from "../types";
-import { CONFIG_FILE_NAME, REPO_BASE_URL } from "../constants";
+import { CONFIG_FILE_NAME, REPO_BASE_URL } from "../config";
 import {
   checkFileExists,
   detectFrameworkType,
   downloadFile,
-  hasDependency,
   hasSrcDirectory,
   installPackages,
   isUsingTypeScript,
-  readJsonFile,
   writeJsonFile,
 } from "../utils";
 import { setupPathAliases } from "../utils/pathAliases";
@@ -101,7 +99,7 @@ export async function initializeVerza() {
     await setupTailwind(frameworkType);
   }
 
-  installPackages(PACKAGES);
+  await installPackages(PACKAGES);
 
   if (shouldSetupTailwindPrettier) {
     await setupTailwindPrettier();
@@ -112,18 +110,17 @@ export async function initializeVerza() {
   const utilsDirPath = path.join(process.cwd(), actualUtilsPath);
   await fs.ensureDir(utilsDirPath);
 
-  const isTypeScriptProject = useTypeScript;
-  const fileExtension = isTypeScriptProject ? "ts" : "js";
+  const fileExtension = useTypeScript ? "ts" : "js";
   const cnFilePath = path.join(utilsDirPath, `cn.${fileExtension}`);
 
   if (!checkFileExists(cnFilePath)) {
-    const cnFileUrl = `${REPO_BASE_URL}/cn.${fileExtension}`;
+    const cnFileUrl = `${REPO_BASE_URL}/utils/cn/cn.${fileExtension}`;
     try {
       await downloadFile(cnFileUrl, cnFilePath);
     } catch (error) {
       console.log(
         chalk.red(
-          `⚠️ Failed to download ${cnFileUrl}, you may need to manually add cn.ts.`
+          `⚠️ Failed to download ${cnFileUrl}, you may need to manually add cn.${fileExtension}.`
         )
       );
     }

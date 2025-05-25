@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import { VerzaConfig } from "../types";
-import { CONFIG_FILE_NAME } from "../constants";
+import { CONFIG_FILE_NAME } from "../config";
 
 export const loadVerzaConfig = () => {
   try {

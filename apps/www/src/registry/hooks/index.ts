@@ -1,5 +1,6 @@
 import { useToggleRegistry } from "./useToggle/useToggle.registry";
+import useToggle from "./useToggle/useToggle";
 
 export const hooksRegistry = {
-  useToggle: useToggleRegistry,
+  useToggle: { hook: useToggle, metadata: useToggleRegistry },
 };

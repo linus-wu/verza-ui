@@ -2,26 +2,41 @@
 
 import { parseArgs } from "./utils";
 import { addComponent, initializeVerza, showHelp } from "./commands";
+import { showVersion } from "./commands/version";
 
-const { command, target } = parseArgs();
+async function main() {
+  const { command, target } = parseArgs();
 
-switch (command) {
-  case "init":
-    initializeVerza();
-    break;
+  try {
+    switch (command) {
+      case "init":
+        await initializeVerza();
+        break;
 
-  case "add":
-    addComponent(target);
-    break;
+      case "add":
+        await addComponent(target);
+        break;
 
-  case "--help":
-  case "-h":
-    showHelp();
-    break;
+      case "--version":
+      case "-v":
+        showVersion();
+        break;
 
-  default:
-    console.log(
-      "Oops! Unknown command. Try `npx verza-ui --help` for more information."
-    );
-    break;
+      case "--help":
+      case "-h":
+        showHelp();
+        break;
+
+      default:
+        console.log(
+          "Oops! Unknown command. Try `npx verza-ui --help` for more information."
+        );
+        break;
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+    process.exit(1);
+  }
 }
+
+main();

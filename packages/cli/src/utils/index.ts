@@ -5,3 +5,4 @@ export * from "./installPackages";
 export * from "./fileUtils";
 export * from "./pathAliases";
 export * from "./tailwind";
+export * from "./registryApi";
