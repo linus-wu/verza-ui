@@ -79,18 +79,12 @@ export async function initializeVerza() {
   const useTypeScript = isUsingTypeScript();
 
   const componentPath = "@/components/verza-ui";
+  const hooksPath = "@/hooks/verza-ui";
   const utilsPath = "@/utils";
 
   const verzaConfig: VerzaConfig = {
     typescript: useTypeScript,
-    paths: { components: componentPath, utils: utilsPath },
-    themeColors: {
-      primary: [54, 111, 87],
-      secondary: [89, 197, 156],
-      accent: [243, 196, 77],
-      warning: [247, 169, 70],
-      error: [228, 81, 65],
-    },
+    paths: { components: componentPath, hooks: hooksPath, utils: utilsPath },
   };
   writeJsonFile(configPath, verzaConfig);
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { parseArgs } from "./utils";
-import { addComponent, initializeVerza, showHelp } from "./commands";
+import { addItem, initializeVerza, showHelp } from "./commands";
 import { showVersion } from "./commands/version";
 
 async function main() {
@@ -14,7 +14,7 @@ async function main() {
         break;
 
       case "add":
-        await addComponent(target);
+        await addItem(target);
         break;
 
       case "--version":

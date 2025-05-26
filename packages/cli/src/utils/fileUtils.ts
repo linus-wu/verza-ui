@@ -50,11 +50,18 @@ export function detectFrameworkType():
   | "nextjs"
   | "vite"
   | "vite-react"
+  | "create-react-app"
   | "unknown" {
-  if (checkFileExists("next.config.js") || checkFileExists("next.config.mjs")) {
+  // 檢查 Next.js 配置檔案
+  if (
+    checkFileExists("next.config.js") ||
+    checkFileExists("next.config.mjs") ||
+    checkFileExists("next.config.ts")
+  ) {
     return "nextjs";
   }
 
+  // 檢查 Vite 配置檔案
   if (checkFileExists("vite.config.js") || checkFileExists("vite.config.ts")) {
     if (hasDependency("react")) {
       return "vite-react";
@@ -62,7 +69,62 @@ export function detectFrameworkType():
     return "vite";
   }
 
+  // 檢查 package.json 中的依賴來推斷框架類型
+  if (hasDependency("next")) {
+    return "nextjs";
+  }
+
+  if (hasDependency("vite")) {
+    if (hasDependency("react")) {
+      return "vite-react";
+    }
+    return "vite";
+  }
+
+  // 檢查 Create React App
+  if (hasDependency("react-scripts")) {
+    return "create-react-app";
+  }
+
   return "unknown";
+}
+
+export function getFrameworkDetectionInfo(): {
+  framework: string;
+  detectedFiles: string[];
+  detectedDependencies: string[];
+} {
+  const detectedFiles: string[] = [];
+  const detectedDependencies: string[] = [];
+
+  // 檢查配置檔案
+  const configFiles = [
+    "next.config.js",
+    "next.config.mjs",
+    "next.config.ts",
+    "vite.config.js",
+    "vite.config.ts",
+  ];
+
+  configFiles.forEach((file) => {
+    if (checkFileExists(file)) {
+      detectedFiles.push(file);
+    }
+  });
+
+  // 檢查依賴
+  const dependencies = ["next", "vite", "react", "react-scripts"];
+  dependencies.forEach((dep) => {
+    if (hasDependency(dep)) {
+      detectedDependencies.push(dep);
+    }
+  });
+
+  return {
+    framework: detectFrameworkType(),
+    detectedFiles,
+    detectedDependencies,
+  };
 }
 
 export function isUsingTypeScript(): boolean {

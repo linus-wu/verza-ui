@@ -15,11 +15,14 @@ export interface ComponentInfo {
 }
 
 export interface RegistryResponse {
-  components: ComponentInfo[];
   version: string;
+  lastUpdated: string;
+  components: ComponentInfo[];
+  hooks: ComponentInfo[];
+  utils: ComponentInfo[];
 }
 
-export async function fetchComponentsList(): Promise<ComponentInfo[]> {
+export async function fetchRegistry(): Promise<RegistryResponse> {
   console.log(chalk.gray("Fetching components list..."));
 
   try {
@@ -30,7 +33,7 @@ export async function fetchComponentsList(): Promise<ComponentInfo[]> {
         "Cache-Control": "no-cache",
       },
     });
-    return response.data.components;
+    return response.data;
   } catch (apiError) {
     console.log(
       chalk.yellow("⚠️ Registry not available from GitHub, using fallback...")
@@ -38,122 +41,198 @@ export async function fetchComponentsList(): Promise<ComponentInfo[]> {
     if (axios.isAxiosError(apiError)) {
       console.log(chalk.gray(`   Reason: ${apiError.message}`));
     }
-    return getFallbackComponentsList();
+    return getFallbackItemsList();
   }
 }
 
-export async function fetchComponentInfo(
-  componentName: string
+export async function fetchItemInfo(
+  itemName: string
 ): Promise<ComponentInfo | null> {
   try {
-    const components = await fetchComponentsList();
+    const registry = await fetchRegistry();
+
+    // 搜尋所有類型的項目
+    const allItems = [
+      ...registry.components,
+      ...registry.hooks,
+      ...registry.utils,
+    ];
+
     return (
-      components.find(
-        (comp) => comp.name.toLowerCase() === componentName.toLowerCase()
+      allItems.find(
+        (item) => item.name.toLowerCase() === itemName.toLowerCase()
       ) || null
     );
   } catch (error) {
     console.error(
-      chalk.red(`Failed to fetch component info for ${componentName}:`),
+      chalk.red(`Failed to fetch component info for ${itemName}:`),
       error
     );
     return null;
   }
 }
 
-export async function validateComponent(
-  componentName: string
-): Promise<boolean> {
-  const componentInfo = await fetchComponentInfo(componentName);
-  return componentInfo !== null && componentInfo.category === "components";
+export async function validateItem(itemName: string): Promise<boolean> {
+  const itemInfo = await fetchItemInfo(itemName);
+  return itemInfo !== null;
 }
 
-function getFallbackComponentsList(): ComponentInfo[] {
-  return [
-    {
-      name: "Button",
-      category: "components",
-      description: "Button component",
-      version: "1.0.0",
-      files: ["components/button/Button.tsx"],
-      dependencies: {
-        external: [],
-        internal: [],
-      },
-    },
-    {
-      name: "Input",
-      category: "components",
-      description: "Input component",
-      version: "1.0.0",
-      files: ["components/input/Input.tsx"],
-      dependencies: {
-        external: [],
-        internal: [],
-      },
-    },
-    {
-      name: "Select",
-      category: "components",
-      description: "Select component",
-      version: "1.0.0",
-      files: ["components/select/Select.tsx"],
-      dependencies: {
-        external: [],
-        internal: [],
-      },
-    },
-    {
-      name: "useToggle",
-      category: "hooks",
-      description: "useToggle hook",
-      version: "1.0.0",
-      files: ["hooks/useToggle/useToggle.ts"],
-      dependencies: {
-        external: [],
-        internal: [],
-      },
-    },
-    {
-      name: "cn",
-      category: "utils",
-      description: "cn util",
-      version: "1.0.0",
-      files: ["utils/cn/cn.ts"],
-      dependencies: {
-        external: ["clsx", "tailwind-merge"],
-        internal: [],
-      },
-    },
-  ];
-}
-
-export async function listAvailableComponents(): Promise<void> {
+export async function fetchItemsByCategory(
+  category: "components" | "hooks" | "utils"
+): Promise<ComponentInfo[]> {
   try {
-    const allComponents = await fetchComponentsList();
-
-    const components = allComponents.filter(
-      (component) => component.category === "components"
-    );
-
-    console.log(chalk.cyan("\n📦 Available Components:\n"));
-
-    components.forEach((component) => {
-      console.log(chalk.white(`  ${component.name}`));
-      if (component.description) {
-        console.log(chalk.gray(`    ${component.description}`));
-      }
-      console.log(
-        chalk.gray(
-          `    Category: ${component.category} | Version: ${component.version}`
-        )
-      );
-      console.log();
-    });
-
-    console.log(chalk.gray(`Total: ${components.length} components available`));
-    console.log(chalk.gray("Usage: npx verza-ui add <component-name>"));
+    const registry = await fetchRegistry();
+    return registry[category];
   } catch (error) {
-    console.error(chalk.red("Failed to list components"));
+    console.error(chalk.red(`Failed to fetch ${category}:`), error);
+    return [];
+  }
+}
+
+export async function getAllItems(): Promise<ComponentInfo[]> {
+  try {
+    const registry = await fetchRegistry();
+    return [...registry.components, ...registry.hooks, ...registry.utils];
+  } catch (error) {
+    console.error(chalk.red("Failed to fetch all items:"), error);
+    return [];
+  }
+}
+
+function getFallbackItemsList(): RegistryResponse {
+  return {
+    version: "1.0.0",
+    lastUpdated: new Date().toISOString(),
+    components: [
+      {
+        name: "Button",
+        category: "components",
+        description: "Button component",
+        version: "1.0.0",
+        files: ["components/button/Button.tsx"],
+        dependencies: {
+          external: [],
+          internal: [],
+        },
+      },
+      {
+        name: "Input",
+        category: "components",
+        description: "Input component",
+        version: "1.0.0",
+        files: ["components/input/Input.tsx"],
+        dependencies: {
+          external: [],
+          internal: [],
+        },
+      },
+      {
+        name: "Select",
+        category: "components",
+        description: "Select component",
+        version: "1.0.0",
+        files: ["components/select/Select.tsx"],
+        dependencies: {
+          external: [],
+          internal: [],
+        },
+      },
+    ],
+    hooks: [
+      {
+        name: "useToggle",
+        category: "hooks",
+        description: "useToggle hook",
+        version: "1.0.0",
+        files: ["hooks/useToggle/useToggle.ts"],
+        dependencies: {
+          external: [],
+          internal: [],
+        },
+      },
+    ],
+    utils: [
+      {
+        name: "cn",
+        category: "utils",
+        description: "cn util",
+        version: "1.0.0",
+        files: ["utils/cn/cn.ts"],
+        dependencies: {
+          external: ["clsx", "tailwind-merge"],
+          internal: [],
+        },
+      },
+    ],
+  };
+}
+
+export async function listAvailableItems(): Promise<void> {
+  try {
+    const registry = await fetchRegistry();
+
+    // 顯示 Components
+    if (registry.components.length > 0) {
+      console.log(chalk.cyan("\n📦 Available Components:\n"));
+      registry.components.forEach((component) => {
+        console.log(chalk.white(`  ${component.name}`));
+        if (component.description) {
+          console.log(chalk.gray(`    ${component.description}`));
+        }
+        console.log(
+          chalk.gray(
+            `    Category: ${component.category} | Version: ${component.version}`
+          )
+        );
+        console.log();
+      });
+    }
+
+    // 顯示 Hooks
+    if (registry.hooks.length > 0) {
+      console.log(chalk.cyan("\n🪝 Available Hooks:\n"));
+      registry.hooks.forEach((hook) => {
+        console.log(chalk.white(`  ${hook.name}`));
+        if (hook.description) {
+          console.log(chalk.gray(`    ${hook.description}`));
+        }
+        console.log(
+          chalk.gray(
+            `    Category: ${hook.category} | Version: ${hook.version}`
+          )
+        );
+        console.log();
+      });
+    }
+
+    // 顯示 Utils
+    if (registry.utils.length > 0) {
+      console.log(chalk.cyan("\n🔧 Available Utils:\n"));
+      registry.utils.forEach((util) => {
+        console.log(chalk.white(`  ${util.name}`));
+        if (util.description) {
+          console.log(chalk.gray(`    ${util.description}`));
+        }
+        console.log(
+          chalk.gray(
+            `    Category: ${util.category} | Version: ${util.version}`
+          )
+        );
+        console.log();
+      });
+    }
+
+    const totalItems =
+      registry.components.length +
+      registry.hooks.length +
+      registry.utils.length;
+    console.log(
+      chalk.gray(
+        `Total: ${totalItems} items available (${registry.components.length} components, ${registry.hooks.length} hooks, ${registry.utils.length} utils)`
+      )
+    );
+    console.log(chalk.gray("Usage: npx verza-ui add <item-name>"));
+  } catch (error) {
+    console.error(chalk.red("Failed to list items"));
   }
 }

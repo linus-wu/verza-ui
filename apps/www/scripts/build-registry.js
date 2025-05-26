@@ -1,5 +1,10 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// 在 ES modules 中獲取 __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 動態導入 registry
 async function buildRegistry() {
@@ -18,7 +23,9 @@ async function buildRegistry() {
     const output = {
       version: "1.0.0",
       lastUpdated: new Date().toISOString(),
-      components: registryData,
+      components: registryData.components,
+      hooks: registryData.hooks,
+      utils: registryData.utils,
     };
 
     // 寫入 JSON 文件
@@ -27,7 +34,9 @@ async function buildRegistry() {
 
     console.log("✅ Registry JSON generated successfully!");
     console.log(`📁 Output: ${outputPath}`);
-    console.log(`📦 Total components: ${registryData.length}`);
+    console.log(`📦 Total components: ${registryData.components.length}`);
+    console.log(`🪝 Total hooks: ${registryData.hooks.length}`);
+    console.log(`🔧 Total utils: ${registryData.utils.length}`);
   } catch (error) {
     console.error("❌ Error building registry:", error);
     process.exit(1);
@@ -37,6 +46,8 @@ async function buildRegistry() {
 async function generateRegistryFromFiles() {
   const registryDir = path.join(__dirname, "../src/registry");
   const components = [];
+  const hooks = [];
+  const utils = [];
 
   // 掃描 components 目錄
   const componentsDir = path.join(registryDir, "components");
@@ -75,7 +86,7 @@ async function generateRegistryFromFiles() {
       const registryFile = path.join(hooksDir, folder, `${folder}.registry.ts`);
       if (fs.existsSync(registryFile)) {
         const hook = await parseRegistryFile(registryFile, "hooks", folder);
-        if (hook) components.push(hook);
+        if (hook) hooks.push(hook);
       }
     }
   }
@@ -92,12 +103,16 @@ async function generateRegistryFromFiles() {
       const registryFile = path.join(utilsDir, folder, `${folder}.registry.ts`);
       if (fs.existsSync(registryFile)) {
         const util = await parseRegistryFile(registryFile, "utils", folder);
-        if (util) components.push(util);
+        if (util) utils.push(util);
       }
     }
   }
 
-  return components;
+  return {
+    components,
+    hooks,
+    utils,
+  };
 }
 
 async function parseRegistryFile(filePath, category, folderName) {
@@ -158,5 +173,4 @@ async function parseRegistryFile(filePath, category, folderName) {
   }
 }
 
-// 執行腳本
 buildRegistry();

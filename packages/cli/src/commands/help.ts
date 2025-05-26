@@ -7,14 +7,20 @@ ${chalk.cyanBright("✨ Verza UI CLI ✨")} ${chalk.gray(`v${CLI_VERSION}`)}
 ${chalk.gray("A modern UI component library CLI tool")}
 
 ${chalk.bold("USAGE:")}
-  ${chalk.cyan("npx verza-ui <command> [options]")}
+${chalk.cyan("npx verza-ui <command> [options]")}
 
 ${chalk.bold("COMMANDS:")}
-  ${chalk.yellow("init")}                    Initialize Verza UI in your project
-  ${chalk.yellow("add <component>")}         Add a component to your project
-  ${chalk.yellow("add list")}               List all available components
-  ${chalk.yellow("--version, -v")}          Show CLI version
-  ${chalk.yellow("--help, -h")}             Show this help message
+  ${chalk.yellow(
+    "init"
+  )}                     Initialize Verza UI in your project
+  ${chalk.yellow(
+    "add <name>"
+  )}               Add a component, hook, or utility to your project
+  ${chalk.yellow(
+    "add list"
+  )}                 List all available components, hooks, and utilities
+  ${chalk.yellow("--version, -v")}            Show CLI version
+  ${chalk.yellow("--help, -h")}               Show this help message
 
 ${chalk.bold("EXAMPLES:")}
   ${chalk.gray("npx verza-ui init")}

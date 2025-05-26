@@ -4,47 +4,49 @@ import chalk from "chalk";
 import { REPO_BASE_URL } from "../config";
 import { downloadFile, loadVerzaConfig, installPackages } from "../utils";
 import {
-  fetchComponentInfo,
-  validateComponent,
-  listAvailableComponents,
+  fetchItemInfo,
+  validateItem,
+  listAvailableItems,
 } from "../utils/registryApi";
 
-export async function addComponent(target: string) {
+export async function addItem(target: string) {
   if (target === "list" || target === "--list" || target === "-l") {
-    await listAvailableComponents();
+    await listAvailableItems();
     return;
   }
 
   if (!target) {
-    console.error(chalk.red("❌ Please provide a component name."));
-    console.log(chalk.gray("Usage: npx verza-ui add <component-name>"));
+    console.error(
+      chalk.red("❌ Please provide a component, hook, or utility name.")
+    );
+    console.log(chalk.gray("Usage: npx verza-ui add <name>"));
     console.log(chalk.gray("       npx verza-ui add list"));
     process.exit(1);
   }
 
   try {
-    console.log(chalk.cyan(`🔍 Looking for component "${target}"...`));
+    console.log(chalk.cyan(`🔍 Looking for "${target}"...`));
 
-    const isValidComponent = await validateComponent(target);
-    if (!isValidComponent) {
-      console.error(chalk.red(`❌ Component "${target}" not found.`));
+    const isValidItem = await validateItem(target);
+    if (!isValidItem) {
+      console.error(chalk.red(`❌ "${target}" not found.`));
       console.log(
-        chalk.gray("Run `npx verza-ui add list` to see available components.")
+        chalk.gray(
+          "Run `npx verza-ui add list` to see available components, hooks, and utilities."
+        )
       );
       process.exit(1);
     }
 
-    const componentInfo = await fetchComponentInfo(target);
-    if (!componentInfo) {
-      console.error(
-        chalk.red(`❌ Failed to fetch component info for "${target}".`)
-      );
+    const itemInfo = await fetchItemInfo(target);
+    if (!itemInfo) {
+      console.error(chalk.red(`❌ Failed to fetch info for "${target}".`));
       process.exit(1);
     }
 
-    console.log(chalk.green(`✅ Found component: ${componentInfo.name}`));
-    if (componentInfo.description) {
-      console.log(chalk.gray(`   ${componentInfo.description}`));
+    console.log(chalk.green(`✅ Found ${itemInfo.category}: ${itemInfo.name}`));
+    if (itemInfo.description) {
+      console.log(chalk.gray(`   ${itemInfo.description}`));
     }
 
     const verzaConfig = loadVerzaConfig();
@@ -58,7 +60,6 @@ export async function addComponent(target: string) {
     }
 
     const isTypeScriptProject = verzaConfig.typescript;
-    const language = isTypeScriptProject ? "ts" : "js";
 
     const hasSrcFolder =
       verzaConfig.paths.components.includes("src/") ||
@@ -74,9 +75,9 @@ export async function addComponent(target: string) {
 
     await fs.ensureDir(baseComponentPath);
 
-    console.log(chalk.cyan("📥 Downloading component files..."));
+    console.log(chalk.cyan("📥 Downloading files..."));
 
-    const downloadPromises = componentInfo.files.map(async (fileName) => {
+    const downloadPromises = itemInfo.files.map(async (fileName: string) => {
       const pathParts = fileName.split("/");
       const actualFileName = pathParts[pathParts.length - 1];
 
@@ -100,19 +101,19 @@ export async function addComponent(target: string) {
 
     const downloadedFiles = await Promise.all(downloadPromises);
 
-    if (componentInfo.dependencies.external.length > 0) {
+    if (itemInfo.dependencies.external.length > 0) {
       console.log(chalk.cyan("📦 Installing dependencies..."));
       console.log(
         chalk.gray(
-          `  Dependencies: ${componentInfo.dependencies.external.join(", ")}`
+          `  Dependencies: ${itemInfo.dependencies.external.join(", ")}`
         )
       );
-      await installPackages(componentInfo.dependencies.external);
+      await installPackages(itemInfo.dependencies.external);
     }
 
-    if (componentInfo.dependencies.internal.length > 0) {
+    if (itemInfo.dependencies.internal.length > 0) {
       console.log(chalk.yellow("⚠️  Internal dependencies required:"));
-      componentInfo.dependencies.internal.forEach((dep) => {
+      itemInfo.dependencies.internal.forEach((dep: string) => {
         console.log(chalk.gray(`  - ${dep}`));
       });
       console.log(
@@ -120,13 +121,20 @@ export async function addComponent(target: string) {
       );
     }
 
-    console.log(chalk.green(`🎉 Component "${target}" added successfully!`));
+    console.log(
+      chalk.green(
+        `🎉 ${
+          itemInfo.category.charAt(0).toUpperCase() +
+          itemInfo.category.slice(0, -1)
+        } "${target}" added successfully!`
+      )
+    );
     console.log(chalk.gray("Files added:"));
-    downloadedFiles.forEach((file) => {
+    downloadedFiles.forEach((file: string) => {
       console.log(chalk.gray(`  - ${path.relative(process.cwd(), file)}`));
     });
   } catch (error) {
-    console.error(chalk.red(`❌ Failed to add component: ${error}`));
+    console.error(chalk.red(`❌ Failed to add: ${error}`));
     process.exit(1);
   }
 }
