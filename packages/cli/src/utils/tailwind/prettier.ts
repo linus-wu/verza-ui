@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import { installPackages } from "../installPackages";
-import { writeJsonFile } from "../fileUtils";
+import { installPackages } from "../packageInstaller";
+import { writeJsonFile } from "../fileHelper";
 
 const PRETTIER_PACKAGES = ["prettier", "prettier-plugin-tailwindcss"];
 

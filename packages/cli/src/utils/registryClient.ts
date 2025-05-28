@@ -1,26 +1,7 @@
 import axios from "axios";
 import chalk from "chalk";
 import { REGISTRY_JSON_URL } from "../config";
-
-export interface ComponentInfo {
-  name: string;
-  category: "components" | "hooks" | "utils";
-  description?: string;
-  version: string;
-  files: string[];
-  dependencies: {
-    external: string[];
-    internal: string[];
-  };
-}
-
-export interface RegistryResponse {
-  version: string;
-  lastUpdated: string;
-  components: ComponentInfo[];
-  hooks: ComponentInfo[];
-  utils: ComponentInfo[];
-}
+import { RegistryResponse, ModuleInfo } from "../types";
 
 export async function fetchRegistry(): Promise<RegistryResponse> {
   console.log(chalk.gray("Fetching components list..."));
@@ -41,45 +22,45 @@ export async function fetchRegistry(): Promise<RegistryResponse> {
     if (axios.isAxiosError(apiError)) {
       console.log(chalk.gray(`   Reason: ${apiError.message}`));
     }
-    return getFallbackItemsList();
+    return getFallbackModulesList();
   }
 }
 
-export async function fetchItemInfo(
-  itemName: string
-): Promise<ComponentInfo | null> {
+export async function fetchModuleInfo(
+  moduleName: string
+): Promise<ModuleInfo | null> {
   try {
     const registry = await fetchRegistry();
 
-    // 搜尋所有類型的項目
-    const allItems = [
+    // Search all types of modules
+    const allModules = [
       ...registry.components,
       ...registry.hooks,
       ...registry.utils,
     ];
 
     return (
-      allItems.find(
-        (item) => item.name.toLowerCase() === itemName.toLowerCase()
+      allModules.find(
+        (module) => module.name.toLowerCase() === moduleName.toLowerCase()
       ) || null
     );
   } catch (error) {
     console.error(
-      chalk.red(`Failed to fetch component info for ${itemName}:`),
+      chalk.red(`Failed to fetch component info for ${moduleName}:`),
       error
     );
     return null;
   }
 }
 
-export async function validateItem(itemName: string): Promise<boolean> {
-  const itemInfo = await fetchItemInfo(itemName);
-  return itemInfo !== null;
+export async function validateModule(moduleName: string): Promise<boolean> {
+  const moduleInfo = await fetchModuleInfo(moduleName);
+  return moduleInfo !== null;
 }
 
-export async function fetchItemsByCategory(
+export async function fetchModulesByCategory(
   category: "components" | "hooks" | "utils"
-): Promise<ComponentInfo[]> {
+): Promise<ModuleInfo[]> {
   try {
     const registry = await fetchRegistry();
     return registry[category];
@@ -89,17 +70,17 @@ export async function fetchItemsByCategory(
   }
 }
 
-export async function getAllItems(): Promise<ComponentInfo[]> {
+export async function getAllModules(): Promise<ModuleInfo[]> {
   try {
     const registry = await fetchRegistry();
     return [...registry.components, ...registry.hooks, ...registry.utils];
   } catch (error) {
-    console.error(chalk.red("Failed to fetch all items:"), error);
+    console.error(chalk.red("Failed to fetch all modules:"), error);
     return [];
   }
 }
 
-function getFallbackItemsList(): RegistryResponse {
+function getFallbackModulesList(): RegistryResponse {
   return {
     version: "1.0.0",
     lastUpdated: new Date().toISOString(),
@@ -112,7 +93,7 @@ function getFallbackItemsList(): RegistryResponse {
         files: ["components/button/Button.tsx"],
         dependencies: {
           external: [],
-          internal: [],
+          internal: ["cn"],
         },
       },
       {
@@ -123,7 +104,7 @@ function getFallbackItemsList(): RegistryResponse {
         files: ["components/input/Input.tsx"],
         dependencies: {
           external: [],
-          internal: [],
+          internal: ["cn"],
         },
       },
       {
@@ -134,7 +115,7 @@ function getFallbackItemsList(): RegistryResponse {
         files: ["components/select/Select.tsx"],
         dependencies: {
           external: [],
-          internal: [],
+          internal: ["cn"],
         },
       },
     ],
@@ -167,11 +148,11 @@ function getFallbackItemsList(): RegistryResponse {
   };
 }
 
-export async function listAvailableItems(): Promise<void> {
+export async function listAvailableModules(): Promise<void> {
   try {
     const registry = await fetchRegistry();
 
-    // 顯示 Components
+    // Display Components
     if (registry.components.length > 0) {
       console.log(chalk.cyan("\n📦 Available Components:\n"));
       registry.components.forEach((component) => {
@@ -188,7 +169,7 @@ export async function listAvailableItems(): Promise<void> {
       });
     }
 
-    // 顯示 Hooks
+    // Display Hooks
     if (registry.hooks.length > 0) {
       console.log(chalk.cyan("\n🪝 Available Hooks:\n"));
       registry.hooks.forEach((hook) => {
@@ -205,7 +186,7 @@ export async function listAvailableItems(): Promise<void> {
       });
     }
 
-    // 顯示 Utils
+    // Display Utils
     if (registry.utils.length > 0) {
       console.log(chalk.cyan("\n🔧 Available Utils:\n"));
       registry.utils.forEach((util) => {
@@ -222,17 +203,17 @@ export async function listAvailableItems(): Promise<void> {
       });
     }
 
-    const totalItems =
+    const totalModules =
       registry.components.length +
       registry.hooks.length +
       registry.utils.length;
     console.log(
       chalk.gray(
-        `Total: ${totalItems} items available (${registry.components.length} components, ${registry.hooks.length} hooks, ${registry.utils.length} utils)`
+        `Total: ${totalModules} modules available (${registry.components.length} components, ${registry.hooks.length} hooks, ${registry.utils.length} utils)`
       )
     );
-    console.log(chalk.gray("Usage: npx verza-ui add <item-name>"));
+    console.log(chalk.gray("Usage: npx verza-ui add <module-name>"));
   } catch (error) {
-    console.error(chalk.red("Failed to list items"));
+    console.error(chalk.red("Failed to list modules"));
   }
 }

@@ -5,5 +5,5 @@ export const selectRegistry: Registry = {
   category: "components",
   requiredFiles: ["Select.tsx"],
   externalDependencies: [],
-  internalDependencies: [],
+  internalDependencies: ["cn"],
 };

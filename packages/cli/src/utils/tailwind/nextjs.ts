@@ -1,8 +1,8 @@
 import fs from "fs-extra";
 import path from "path";
 import chalk from "chalk";
-import { installPackages } from "../installPackages";
-import { checkFileExists } from "../fileUtils";
+import { installPackages } from "../packageInstaller";
+import { checkFileExists } from "../fileHelper";
 
 const TAILWIND_NEXTJS_PACKAGES = [
   "tailwindcss",

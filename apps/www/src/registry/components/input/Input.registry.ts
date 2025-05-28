@@ -5,5 +5,5 @@ export const inputRegistry: Registry = {
   category: "components",
   requiredFiles: ["Input.tsx"],
   externalDependencies: [],
-  internalDependencies: [],
+  internalDependencies: ["cn"],
 };

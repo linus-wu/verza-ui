@@ -2,12 +2,8 @@ import fs from "fs-extra";
 import path from "path";
 import chalk from "chalk";
 import inquirer from "inquirer";
-import {
-  checkFileExists,
-  hasSrcDirectory,
-  readJsonFile,
-  writeJsonFile,
-} from "./fileUtils";
+import { hasSrcDirectory } from "./projectDetector";
+import { checkFileExists, readJsonFile, writeJsonFile } from "./fileHelper";
 
 export async function setupPathAliases() {
   const isNextJs =
@@ -194,17 +190,15 @@ export async function setupViteAliases() {
   }
 
   try {
-    const viteConfigContent = fs.readFileSync(
+    let viteConfigContent = fs.readFileSync(
       path.join(process.cwd(), viteConfigPath),
       "utf8"
     );
 
     // More comprehensive check for existing aliases
     const hasAliasConfig =
-      viteConfigContent.includes("alias") &&
-      (viteConfigContent.includes("'@'") ||
-        viteConfigContent.includes('"@"') ||
-        viteConfigContent.includes("@/"));
+      /alias\s*:\s*{[^}]*['"`]@['"`]\s*:/m.test(viteConfigContent) ||
+      /alias\s*:\s*{[^}]*@\s*:/m.test(viteConfigContent);
 
     if (hasAliasConfig) {
       console.log(
@@ -213,82 +207,159 @@ export async function setupViteAliases() {
       return true;
     }
 
-    console.log(
-      chalk.yellow(
-        `⚠️ Please manually update your ${viteConfigPath} with the following configuration:`
-      )
-    );
-
-    const isTypeScript = viteConfigPath.endsWith(".ts");
     const srcPath = hasSrcDirectory() ? "./src" : ".";
 
-    if (isTypeScript) {
-      console.log(
-        chalk.gray(`
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath, URL } from 'node:url'
-
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('${srcPath}', import.meta.url)),
-    },
-  },
-})
-      `)
+    // Check if we need to add path import
+    const needsPathImport =
+      !/import\s+path\s+from\s+['"`]path['"`]/m.test(viteConfigContent) &&
+      !/const\s+path\s*=\s*require\s*\(\s*['"`]path['"`]\s*\)/m.test(
+        viteConfigContent
       );
-    } else {
-      console.log(
-        chalk.gray(`
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath, URL } from 'node:url'
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('${srcPath}', import.meta.url)),
-    },
-  },
-})
-      `)
+    // Add necessary imports
+    if (needsPathImport) {
+      const lines = viteConfigContent.split("\n");
+      let insertIndex = 0;
+
+      // Find the best position to insert the import
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith("import ")) {
+          insertIndex = i + 1;
+        } else if (
+          line.startsWith("export default") ||
+          line.includes("defineConfig")
+        ) {
+          break;
+        }
+      }
+
+      // If no imports found, insert at the beginning
+      if (insertIndex === 0) {
+        insertIndex = 0;
+      }
+
+      lines.splice(insertIndex, 0, "import path from 'path'");
+      viteConfigContent = lines.join("\n");
+    }
+
+    // Use the recommended Vite alias configuration
+    const aliasConfig = `'@': path.resolve(__dirname, '${srcPath}')`;
+
+    let configUpdated = false;
+
+    // Try to find and update existing resolve.alias section
+    if (/resolve\s*:\s*{[^}]*alias\s*:\s*{/m.test(viteConfigContent)) {
+      // Add to existing alias section
+      const aliasPattern = /(alias\s*:\s*{)([^}]*)(})/m;
+      const aliasMatch = viteConfigContent.match(aliasPattern);
+
+      if (aliasMatch) {
+        const opening = aliasMatch[1];
+        const content = aliasMatch[2];
+        const closing = aliasMatch[3];
+
+        const hasContent = content.trim().length > 0;
+        const separator = hasContent ? ",\n      " : "\n      ";
+
+        viteConfigContent = viteConfigContent.replace(
+          aliasMatch[0],
+          `${opening}${content}${separator}${aliasConfig}\n    ${closing}`
+        );
+        configUpdated = true;
+      }
+    } else if (/resolve\s*:\s*{/m.test(viteConfigContent)) {
+      // Add alias to existing resolve section
+      const resolvePattern = /(resolve\s*:\s*{)([^}]*)(})/m;
+      const resolveMatch = viteConfigContent.match(resolvePattern);
+
+      if (resolveMatch) {
+        const opening = resolveMatch[1];
+        const content = resolveMatch[2];
+        const closing = resolveMatch[3];
+
+        const hasContent = content.trim().length > 0;
+        const separator = hasContent ? ",\n    " : "\n    ";
+
+        viteConfigContent = viteConfigContent.replace(
+          resolveMatch[0],
+          `${opening}${content}${separator}alias: {\n      ${aliasConfig}\n    }\n  ${closing}`
+        );
+        configUpdated = true;
+      }
+    } else {
+      // Add entire resolve section
+      // Try different patterns for defineConfig
+      const patterns = [
+        /(defineConfig\s*\(\s*{)([^}]*(?:{[^}]*}[^}]*)*)(}\s*\))/m,
+        /(export\s+default\s+defineConfig\s*\(\s*{)([^}]*)(}\s*\))/m,
+        /(export\s+default\s+{)([^}]*)(})/m,
+      ];
+
+      for (const pattern of patterns) {
+        const match = viteConfigContent.match(pattern);
+        if (match) {
+          const opening = match[1];
+          const content = match[2];
+          const closing = match[3];
+
+          const hasContent = content.trim().length > 0;
+          const separator = hasContent ? ",\n  " : "\n  ";
+
+          viteConfigContent = viteConfigContent.replace(
+            match[0],
+            `${opening}${content}${separator}resolve: {\n    alias: {\n      ${aliasConfig}\n    }\n  }\n${closing}`
+          );
+          configUpdated = true;
+          break;
+        }
+      }
+    }
+
+    if (!configUpdated) {
+      throw new Error(
+        "Could not find a suitable place to add the alias configuration"
       );
     }
 
-    console.log(
-      chalk.cyan("💡 Or if you prefer using __dirname (CommonJS style):")
-    );
-    console.log(
-      chalk.gray(`
-resolve: {
-  alias: {
-    '@': path.resolve(__dirname, '${srcPath}'),
-  },
-}
-    `)
+    // Write the updated config
+    fs.writeFileSync(
+      path.join(process.cwd(), viteConfigPath),
+      viteConfigContent,
+      "utf8"
     );
 
-    console.log(
-      chalk.cyan("💡 Or if you already have a resolve section, just add:")
-    );
-    console.log(
-      chalk.gray(`
-resolve: {
-  alias: {
-    '@': fileURLToPath(new URL('${srcPath}', import.meta.url)),
-  },
-}
-    `)
-    );
+    console.log(chalk.green(`✅ Updated ${viteConfigPath} with path aliases`));
+    console.log(chalk.gray(`   Added: '@' alias pointing to '${srcPath}'`));
 
     return true;
   } catch (error) {
-    console.error(chalk.red(`❌ Failed to read ${viteConfigPath}`), error);
+    console.error(chalk.red(`❌ Failed to update ${viteConfigPath}`), error);
+
+    // Fallback: show manual configuration
+    console.log(
+      chalk.yellow(
+        `⚠️ Automatic configuration failed. Please manually update your ${viteConfigPath} with the following:`
+      )
+    );
+
+    const srcPath = hasSrcDirectory() ? "./src" : ".";
+    console.log(
+      chalk.gray(`
+import { defineConfig } from 'vite'
+import path from 'path'
+
+export default defineConfig({
+  // ... your existing config
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '${srcPath}'),
+    },
+  },
+})
+      `)
+    );
+
     return false;
   }
 }

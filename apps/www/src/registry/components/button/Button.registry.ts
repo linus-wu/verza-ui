@@ -5,5 +5,5 @@ export const buttonRegistry: Registry = {
   category: "components",
   requiredFiles: ["Button.tsx"],
   externalDependencies: [],
-  internalDependencies: [],
+  internalDependencies: ["cn"],
 };

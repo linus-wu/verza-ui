@@ -1,20 +1,19 @@
 #!/usr/bin/env node
 
 import { parseArgs } from "./utils";
-import { addItem, initializeVerza, showHelp } from "./commands";
-import { showVersion } from "./commands/version";
+import { initializeVerza, addModule, showVersion, showHelp } from "./commands";
 
 async function main() {
-  const { command, target } = parseArgs();
+  const { command, target, flags } = parseArgs();
 
   try {
     switch (command) {
       case "init":
-        await initializeVerza();
+        await initializeVerza(flags);
         break;
 
       case "add":
-        await addItem(target);
+        await addModule(target, flags);
         break;
 
       case "--version":

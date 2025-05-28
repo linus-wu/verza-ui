@@ -1,16 +1,25 @@
 import chalk from "chalk";
-import { hasTailwindInstalled, hasTailwindPrettierSetup } from "./detect";
+import {
+  hasTailwindInstalled,
+  hasTailwindPrettierSetup,
+  getTailwindVersion,
+  isTailwindV4OrLater,
+} from "./detect";
 import { setupTailwindForNextjs } from "./nextjs";
 import { setupTailwindForVite } from "./vite";
 import { setupTailwindPrettier } from "./prettier";
-import { getFrameworkDetectionInfo } from "../fileUtils";
+import { setupTailwindCustomStyles } from "./customStyles";
+import { getFrameworkDetectionInfo } from "../projectDetector";
 
 export {
   hasTailwindInstalled,
   hasTailwindPrettierSetup,
+  getTailwindVersion,
+  isTailwindV4OrLater,
   setupTailwindForNextjs,
   setupTailwindForVite,
   setupTailwindPrettier,
+  setupTailwindCustomStyles,
 };
 
 export async function setupTailwind(frameworkType: string): Promise<void> {

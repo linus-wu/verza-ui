@@ -1,9 +1,6 @@
 import fs from "fs-extra";
 import path from "path";
-
-export function checkFileExists(filePath: string): boolean {
-  return fs.existsSync(path.join(process.cwd(), filePath));
-}
+import { checkFileExists } from "./fileHelper";
 
 export function hasDependency(dependencyName: string): boolean {
   try {
@@ -24,35 +21,13 @@ export function hasDependency(dependencyName: string): boolean {
   }
 }
 
-export function readJsonFile(filePath: string): any {
-  try {
-    const fullPath = path.join(process.cwd(), filePath);
-    if (!fs.existsSync(fullPath)) {
-      return null;
-    }
-    return JSON.parse(fs.readFileSync(fullPath, "utf8"));
-  } catch (error) {
-    return null;
-  }
-}
-
-export function writeJsonFile(filePath: string, data: any): boolean {
-  try {
-    const fullPath = path.join(process.cwd(), filePath);
-    fs.writeFileSync(fullPath, JSON.stringify(data, null, 2), "utf8");
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
 export function detectFrameworkType():
   | "nextjs"
   | "vite"
   | "vite-react"
   | "create-react-app"
   | "unknown" {
-  // 檢查 Next.js 配置檔案
+  // Check Next.js configuration files
   if (
     checkFileExists("next.config.js") ||
     checkFileExists("next.config.mjs") ||
@@ -61,7 +36,7 @@ export function detectFrameworkType():
     return "nextjs";
   }
 
-  // 檢查 Vite 配置檔案
+  // Check Vite configuration files
   if (checkFileExists("vite.config.js") || checkFileExists("vite.config.ts")) {
     if (hasDependency("react")) {
       return "vite-react";
@@ -69,7 +44,7 @@ export function detectFrameworkType():
     return "vite";
   }
 
-  // 檢查 package.json 中的依賴來推斷框架類型
+  // Check dependencies in package.json to infer framework type
   if (hasDependency("next")) {
     return "nextjs";
   }
@@ -81,7 +56,7 @@ export function detectFrameworkType():
     return "vite";
   }
 
-  // 檢查 Create React App
+  // Check Create React App
   if (hasDependency("react-scripts")) {
     return "create-react-app";
   }
@@ -97,7 +72,7 @@ export function getFrameworkDetectionInfo(): {
   const detectedFiles: string[] = [];
   const detectedDependencies: string[] = [];
 
-  // 檢查配置檔案
+  // Check configuration files
   const configFiles = [
     "next.config.js",
     "next.config.mjs",
@@ -112,7 +87,7 @@ export function getFrameworkDetectionInfo(): {
     }
   });
 
-  // 檢查依賴
+  // Check dependencies
   const dependencies = ["next", "vite", "react", "react-scripts"];
   dependencies.forEach((dep) => {
     if (hasDependency(dep)) {
