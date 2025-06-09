@@ -1,20 +1,18 @@
 import fs from "fs-extra";
 import path from "path";
 import chalk from "chalk";
+import axios from "axios";
 import { REPO_BASE_URL } from "../config";
-import { downloadFile, loadVerzaConfig, installPackages } from "../utils";
+import { loadVerzaConfig, installPackages, convertTsToJs } from "../utils";
 import {
   fetchModuleInfo,
   validateModule,
   listAvailableModules,
 } from "../utils/registryClient";
 
-// 用於追蹤已處理的模組，避免循環依賴
+// Track processed modules to avoid circular dependencies
 const processedModules = new Set<string>();
 
-/**
- * 根據模組類型和配置獲取正確的下載路徑
- */
 function getModuleDownloadPath(
   moduleInfo: any,
   verzaConfig: any,
@@ -36,7 +34,6 @@ function getModuleDownloadPath(
       basePath = verzaConfig.paths.components;
   }
 
-  // 處理 @/ 別名
   if (basePath.startsWith("@/")) {
     const relativePath = basePath.replace("@/", "");
     basePath = hasSrcFolder ? `src/${relativePath}` : relativePath;
@@ -45,20 +42,64 @@ function getModuleDownloadPath(
   return path.join(process.cwd(), basePath);
 }
 
-/**
- * 生成正確的導入路徑提示
- */
-function generateImportExample(
-  moduleInfo: any,
-  target: string,
+async function updateImportPaths(
+  filePath: string,
   verzaConfig: any
-): string {
+): Promise<void> {
+  try {
+    const ext = path.extname(filePath);
+    if (![".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
+      return;
+    }
+
+    const content = await fs.readFile(filePath, "utf-8");
+    let updatedContent = content;
+
+    const pathMappings = {
+      "@/components/verza-ui": verzaConfig.paths.components,
+      "@/hooks/verza-ui": verzaConfig.paths.hooks,
+      "@/utils": verzaConfig.paths.utils,
+    };
+
+    // Replace import paths
+    for (const [registryPath, userPath] of Object.entries(pathMappings)) {
+      if (registryPath !== userPath) {
+        const escapedRegistryPath = registryPath.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        );
+
+        const patterns = [
+          {
+            pattern: new RegExp(`(["'])${escapedRegistryPath}(["'])`, "g"),
+            replacement: `$1${userPath}$2`,
+          },
+          {
+            pattern: new RegExp(
+              `(["'])${escapedRegistryPath}(/[^"']*)(["'])`,
+              "g"
+            ),
+            replacement: `$1${userPath}$2$3`,
+          },
+        ];
+
+        for (const { pattern, replacement } of patterns) {
+          updatedContent = updatedContent.replace(pattern, replacement);
+        }
+      }
+    }
+
+    if (updatedContent !== content) {
+      await fs.writeFile(filePath, updatedContent);
+    }
+  } catch (error) {}
+}
+
+function generateImportExample(moduleInfo: any, verzaConfig: any): string {
   switch (moduleInfo.category) {
     case "components":
       const componentPath = verzaConfig.paths.components;
-      return `import { ${
-        moduleInfo.name
-      } } from "${componentPath}/${target.toLowerCase()}/${moduleInfo.name}";`;
+      return `import { ${moduleInfo.name} } from "${componentPath}/${moduleInfo.name}";`;
 
     case "hooks":
       const hooksPath = verzaConfig.paths.hooks;
@@ -73,9 +114,38 @@ function generateImportExample(
   }
 }
 
-/**
- * 遞歸解析並安裝模組的所有依賴
- */
+async function downloadAndProcessFile(
+  fileName: string,
+  outputPath: string,
+  isTypeScriptProject: boolean
+): Promise<void> {
+  try {
+    const fileUrl = `${REPO_BASE_URL}/${fileName}`;
+    const response = await axios.get(fileUrl, {
+      responseType: "text",
+      timeout: 10000,
+    });
+
+    let content = response.data;
+
+    if (
+      !isTypeScriptProject &&
+      (fileName.endsWith(".ts") || fileName.endsWith(".tsx"))
+    ) {
+      content = convertTsToJs(content, fileName);
+    }
+
+    await fs.ensureDir(path.dirname(outputPath));
+
+    await fs.writeFile(outputPath, content, "utf-8");
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      throw new Error(`File not found: ${fileName}`);
+    }
+    throw error;
+  }
+}
+
 async function resolveDependencies(
   moduleName: string,
   verzaConfig: any,
@@ -88,7 +158,6 @@ async function resolveDependencies(
   internalDependencies: string[];
   downloadedFiles: string[];
 }> {
-  // 避免重複處理同一個模組
   if (processedModules.has(moduleName)) {
     return {
       externalDependencies: [],
@@ -101,7 +170,6 @@ async function resolveDependencies(
 
   const moduleInfo = await fetchModuleInfo(moduleName);
   if (!moduleInfo) {
-    console.warn(chalk.yellow(`⚠️  Could not find dependency: ${moduleName}`));
     return {
       externalDependencies: [],
       internalDependencies: [],
@@ -109,17 +177,10 @@ async function resolveDependencies(
     };
   }
 
-  console.log(
-    chalk.gray(`  📦 Processing ${moduleInfo.category}: ${moduleName}`)
-  );
-
-  // 收集外部依賴
   moduleInfo.dependencies.external.forEach((dep) => allExternalDeps.add(dep));
 
-  // 收集內部依賴
   moduleInfo.dependencies.internal.forEach((dep) => allInternalDeps.add(dep));
 
-  // 獲取當前模組的正確下載路徑
   const moduleBasePath = getModuleDownloadPath(
     moduleInfo,
     verzaConfig,
@@ -127,51 +188,34 @@ async function resolveDependencies(
   );
   await fs.ensureDir(moduleBasePath);
 
-  // 下載當前模組的文件
   const downloadPromises = moduleInfo.files.map(async (fileName: string) => {
     const pathParts = fileName.split("/");
     const actualFileName = pathParts[pathParts.length - 1];
 
-    let adjustedFileName = actualFileName;
+    let finalFileName = actualFileName;
     if (!isTypeScriptProject) {
-      adjustedFileName = actualFileName
+      finalFileName = actualFileName
         .replace(/\.tsx$/, ".jsx")
         .replace(/\.ts$/, ".js");
     } else if (actualFileName.endsWith(".jsx")) {
-      adjustedFileName = actualFileName.replace(/\.jsx$/, ".tsx");
+      finalFileName = actualFileName.replace(/\.jsx$/, ".tsx");
     }
 
-    const repoUrl = `${REPO_BASE_URL}/${fileName}`;
+    const outputPath = path.join(moduleBasePath, finalFileName);
 
-    // 對於組件，保持子目錄結構；對於 utils 和 hooks，直接放在根目錄
-    let outputPath: string;
-    if (moduleInfo.category === "components") {
-      // 為組件創建子目錄 (例如: components/verza-ui/button/Button.tsx)
-      const componentSubDir = path.join(
-        moduleBasePath,
-        moduleName.toLowerCase()
-      );
-      await fs.ensureDir(componentSubDir);
-      outputPath = path.join(componentSubDir, adjustedFileName);
-    } else {
-      // utils 和 hooks 直接放在對應目錄下
-      outputPath = path.join(moduleBasePath, adjustedFileName);
-    }
-
-    // 檢查文件是否已存在
     if (await fs.pathExists(outputPath)) {
-      console.log(chalk.gray(`    ✓ ${adjustedFileName} already exists`));
       return outputPath;
     }
 
-    console.log(chalk.gray(`    - Downloading ${adjustedFileName}...`));
-    await downloadFile(repoUrl, outputPath);
+    await downloadAndProcessFile(fileName, outputPath, isTypeScriptProject);
+
+    await updateImportPaths(outputPath, verzaConfig);
+
     return outputPath;
   });
 
   const currentDownloadedFiles = await Promise.all(downloadPromises);
 
-  // 遞歸處理內部依賴
   const allDownloadedFiles = [...currentDownloadedFiles];
 
   for (const internalDep of moduleInfo.dependencies.internal) {
@@ -217,10 +261,7 @@ export async function addModule(
   }
 
   try {
-    // 重置已處理模組的追蹤
     processedModules.clear();
-
-    console.log(chalk.cyan(`🔍 Looking for "${target}"...`));
 
     const isValidModule = await validateModule(target);
     if (!isValidModule) {
@@ -235,15 +276,8 @@ export async function addModule(
 
     const moduleInfo = await fetchModuleInfo(target);
     if (!moduleInfo) {
-      console.error(chalk.red(`❌ Failed to fetch info for "${target}".`));
+      console.error(chalk.red(`❌ Failed to fetch "${target}".`));
       process.exit(1);
-    }
-
-    console.log(
-      chalk.green(`✅ Found ${moduleInfo.category}: ${moduleInfo.name}`)
-    );
-    if (moduleInfo.description) {
-      console.log(chalk.gray(`   ${moduleInfo.description}`));
     }
 
     const verzaConfig = loadVerzaConfig();
@@ -262,11 +296,8 @@ export async function addModule(
       verzaConfig.paths.components.includes("src/") ||
       fs.existsSync(path.join(process.cwd(), "src"));
 
-    console.log(
-      chalk.cyan("📥 Resolving dependencies and downloading files...")
-    );
+    console.log(chalk.cyan(`📦 Adding ${moduleInfo.name}...`));
 
-    // 遞歸解析所有依賴
     const resolvedDependencies = await resolveDependencies(
       target,
       verzaConfig,
@@ -274,72 +305,30 @@ export async function addModule(
       isTypeScriptProject
     );
 
-    // 安裝外部依賴
     if (resolvedDependencies.externalDependencies.length > 0) {
-      console.log(chalk.cyan("📦 Installing external dependencies..."));
-      console.log(
-        chalk.gray(
-          `  Dependencies: ${resolvedDependencies.externalDependencies.join(
-            ", "
-          )}`
-        )
-      );
       await installPackages(resolvedDependencies.externalDependencies);
     }
 
-    // 顯示內部依賴信息
-    if (resolvedDependencies.internalDependencies.length > 0) {
-      console.log(chalk.green("✅ Internal dependencies resolved:"));
-      resolvedDependencies.internalDependencies.forEach((dep: string) => {
-        console.log(chalk.gray(`  ✓ ${dep}`));
+    console.log(chalk.green(`🎉 ${moduleInfo.name} added successfully!`));
+    console.log();
+
+    const uniqueFiles = [...new Set(resolvedDependencies.downloadedFiles)];
+    if (uniqueFiles.length > 0) {
+      console.log(chalk.gray("Files:"));
+      uniqueFiles.forEach((file: string) => {
+        console.log(chalk.gray(`  ${path.relative(process.cwd(), file)}`));
       });
     }
 
-    console.log(
-      chalk.green(
-        `🎉 ${
-          moduleInfo.category.charAt(0).toUpperCase() +
-          moduleInfo.category.slice(0, -1)
-        } "${target}" added successfully!`
-      )
-    );
-
-    console.log(chalk.gray("Files added:"));
-    // 去重並顯示所有下載的文件
-    const uniqueFiles = [...new Set(resolvedDependencies.downloadedFiles)];
-    uniqueFiles.forEach((file: string) => {
-      console.log(chalk.gray(`  - ${path.relative(process.cwd(), file)}`));
-    });
-
-    // 顯示依賴摘要
-    if (
-      resolvedDependencies.externalDependencies.length > 0 ||
-      resolvedDependencies.internalDependencies.length > 0
-    ) {
-      console.log(chalk.cyan("\n📋 Dependency Summary:"));
-      if (resolvedDependencies.externalDependencies.length > 0) {
-        console.log(
-          chalk.gray(
-            `  External: ${resolvedDependencies.externalDependencies.length} packages installed`
-          )
-        );
-      }
-      if (resolvedDependencies.internalDependencies.length > 0) {
-        console.log(
-          chalk.gray(
-            `  Internal: ${resolvedDependencies.internalDependencies.length} utilities included`
-          )
-        );
-      }
-    }
-
-    // 顯示使用提示
     console.log(chalk.cyan("\n💡 Usage:"));
     console.log(
-      chalk.gray(`  ${generateImportExample(moduleInfo, target, verzaConfig)}`)
+      chalk.gray(`  ${generateImportExample(moduleInfo, verzaConfig)}`)
     );
   } catch (error) {
-    console.error(chalk.red(`❌ Failed to add: ${error}`));
+    console.error(chalk.red(`❌ Failed to add ${target}`));
+    if (error instanceof Error && error.message) {
+      console.log(chalk.gray(`   ${error.message}`));
+    }
     process.exit(1);
   }
 }

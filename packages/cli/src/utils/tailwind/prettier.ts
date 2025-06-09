@@ -5,7 +5,7 @@ import { writeJsonFile } from "../fileHelper";
 const PRETTIER_PACKAGES = ["prettier", "prettier-plugin-tailwindcss"];
 
 export async function setupTailwindPrettier(): Promise<void> {
-  console.log(chalk.blue("📝 Setting up Tailwind CSS Prettier..."));
+  console.log(chalk.cyan("📝 Setting up Prettier..."));
 
   await installPackages(PRETTIER_PACKAGES);
 
@@ -19,5 +19,5 @@ export async function setupTailwindPrettier(): Promise<void> {
 
   writeJsonFile(".prettierrc", prettierConfig);
 
-  console.log(chalk.green("✅ Tailwind CSS Prettier configured successfully!"));
+  console.log(chalk.green("✅ Prettier configured"));
 }

@@ -3,8 +3,7 @@ import { CLI_VERSION } from "../config";
 
 export const showHelp = () => {
   console.log(`
-${chalk.cyanBright("✨ Verza UI CLI ✨")} ${chalk.gray(`v${CLI_VERSION}`)}
-${chalk.gray("A modern UI component library CLI tool")}
+${chalk.blue("🌌 Verza UI")} ${chalk.gray(`v${CLI_VERSION}`)}
 
 ${chalk.bold("USAGE:")}
 ${chalk.cyan("npx verza-ui <command> [options]")}

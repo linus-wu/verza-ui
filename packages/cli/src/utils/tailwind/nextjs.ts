@@ -11,7 +11,7 @@ const TAILWIND_NEXTJS_PACKAGES = [
 ];
 
 export async function setupTailwindForNextjs(): Promise<void> {
-  console.log(chalk.blue("🌬️ Setting up Tailwind CSS for Next.js..."));
+  console.log(chalk.cyan("🌬️ Setting up Tailwind CSS for Next.js..."));
 
   await installPackages(TAILWIND_NEXTJS_PACKAGES);
 
@@ -64,7 +64,5 @@ export default config;`;
     fs.writeFileSync(globalCssPath, cssContent, "utf8");
   }
 
-  console.log(chalk.green("✅ Tailwind CSS setup completed for Next.js!"));
-  console.log(chalk.gray(`📄 Modified: ${globalCssPath}`));
-  console.log(chalk.gray(`📄 Created: postcss.config.mjs`));
+  console.log(chalk.green("✅ TailwindCSS configured for Next.js"));
 }

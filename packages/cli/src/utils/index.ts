@@ -7,3 +7,7 @@ export * from "./projectDetector";
 export * from "./pathAliases";
 export * from "./registryClient";
 export * from "./fileHelper";
+export * from "./configManager";
+export * from "./validators";
+export * from "./projectSetup";
+export * from "./tsTransform";

@@ -25,7 +25,7 @@ export function getTailwindVersion(): string | null {
       return null;
     }
 
-    // 首先嘗試從實際安裝的包中獲取版本
+    // First try to get version from actual installed package
     try {
       const tailwindPkgPath = path.join(
         process.cwd(),
@@ -40,29 +40,29 @@ export function getTailwindVersion(): string | null {
         return tailwindPkg.version;
       }
     } catch {
-      // 如果無法讀取實際安裝的版本，繼續使用 package.json 中的版本
+      // If unable to read actual installed version, continue using version from package.json
     }
 
-    // 處理不同的版本格式
-    // 1. 完整版本號: "4.0.0", "^4.0.0", "~4.0.0"
+    // Handle different version formats
+    // 1. Full version number: "4.0.0", "^4.0.0", "~4.0.0"
     const fullVersionMatch = tailwindVersion.match(/(\d+\.\d+\.\d+)/);
     if (fullVersionMatch) {
       return fullVersionMatch[1];
     }
 
-    // 2. 主版本號: "^4", "~4", "4"
+    // 2. Major version number: "^4", "~4", "4"
     const majorVersionMatch = tailwindVersion.match(/[\^~]?(\d+)$/);
     if (majorVersionMatch) {
       return `${majorVersionMatch[1]}.0.0`;
     }
 
-    // 3. 主.次版本號: "^4.0", "~4.0", "4.0"
+    // 3. Major.Minor version number: "^4.0", "~4.0", "4.0"
     const majorMinorMatch = tailwindVersion.match(/[\^~]?(\d+\.\d+)$/);
     if (majorMinorMatch) {
       return `${majorMinorMatch[1]}.0`;
     }
 
-    // 4. 預發布版本: "4.0.0-alpha.1", "^4.0.0-beta.1"
+    // 4. Pre-release version: "4.0.0-alpha.1", "^4.0.0-beta.1"
     const preReleaseMatch = tailwindVersion.match(
       /[\^~]?(\d+\.\d+\.\d+)[-.]?(alpha|beta|rc)?/
     );
@@ -70,7 +70,7 @@ export function getTailwindVersion(): string | null {
       return preReleaseMatch[1];
     }
 
-    // 如果都無法匹配，返回原始版本字符串
+    // If no match can be found, return original version string
     return tailwindVersion.replace(/[\^~]/g, "");
   } catch (error) {
     return null;
@@ -84,11 +84,11 @@ export function isTailwindV4OrLater(): boolean {
   }
 
   try {
-    // 解析主版本號
+    // Parse major version number
     const versionParts = version.split(".");
     const majorVersion = parseInt(versionParts[0]);
 
-    // 檢查是否為有效數字
+    // Check if it's a valid number
     if (isNaN(majorVersion)) {
       console.warn(`⚠️  Could not parse major version from: ${version}`);
       return false;

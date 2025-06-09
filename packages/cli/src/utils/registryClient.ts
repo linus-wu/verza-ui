@@ -4,8 +4,6 @@ import { REGISTRY_JSON_URL } from "../config";
 import { RegistryResponse, ModuleInfo } from "../types";
 
 export async function fetchRegistry(): Promise<RegistryResponse> {
-  console.log(chalk.gray("Fetching components list..."));
-
   try {
     const response = await axios.get<RegistryResponse>(REGISTRY_JSON_URL, {
       timeout: 10000,
@@ -16,12 +14,7 @@ export async function fetchRegistry(): Promise<RegistryResponse> {
     });
     return response.data;
   } catch (apiError) {
-    console.log(
-      chalk.yellow("⚠️ Registry not available from GitHub, using fallback...")
-    );
-    if (axios.isAxiosError(apiError)) {
-      console.log(chalk.gray(`   Reason: ${apiError.message}`));
-    }
+    // Use fallback but no need to inform user about technical details
     return getFallbackModulesList();
   }
 }
@@ -154,53 +147,31 @@ export async function listAvailableModules(): Promise<void> {
 
     // Display Components
     if (registry.components.length > 0) {
-      console.log(chalk.cyan("\n📦 Available Components:\n"));
+      console.log(chalk.cyan("\n📦 Available Components:"));
       registry.components.forEach((component) => {
-        console.log(chalk.white(`  ${component.name}`));
-        if (component.description) {
-          console.log(chalk.gray(`    ${component.description}`));
-        }
         console.log(
-          chalk.gray(
-            `    Category: ${component.category} | Version: ${component.version}`
-          )
+          chalk.white(`  ${component.name} | Version: ${component.version}`)
         );
-        console.log();
       });
+      console.log();
     }
 
     // Display Hooks
     if (registry.hooks.length > 0) {
-      console.log(chalk.cyan("\n🪝 Available Hooks:\n"));
+      console.log(chalk.cyan("\n🪝 Available Hooks:"));
       registry.hooks.forEach((hook) => {
-        console.log(chalk.white(`  ${hook.name}`));
-        if (hook.description) {
-          console.log(chalk.gray(`    ${hook.description}`));
-        }
-        console.log(
-          chalk.gray(
-            `    Category: ${hook.category} | Version: ${hook.version}`
-          )
-        );
-        console.log();
+        console.log(chalk.white(`  ${hook.name} | Version: ${hook.version}`));
       });
+      console.log();
     }
 
     // Display Utils
     if (registry.utils.length > 0) {
-      console.log(chalk.cyan("\n🔧 Available Utils:\n"));
+      console.log(chalk.cyan("\n🔧 Available Utils:"));
       registry.utils.forEach((util) => {
-        console.log(chalk.white(`  ${util.name}`));
-        if (util.description) {
-          console.log(chalk.gray(`    ${util.description}`));
-        }
-        console.log(
-          chalk.gray(
-            `    Category: ${util.category} | Version: ${util.version}`
-          )
-        );
-        console.log();
+        console.log(chalk.white(`  ${util.name} | Version: ${util.version}`));
       });
+      console.log();
     }
 
     const totalModules =

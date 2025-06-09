@@ -54,7 +54,6 @@ function getInstalledPackages(): string[] {
 export const installPackages = async (packages: string[]) => {
   // Check if packages array is empty
   if (!packages || packages.length === 0) {
-    console.log(chalk.gray("📦 No packages to install"));
     return;
   }
 
@@ -65,24 +64,11 @@ export const installPackages = async (packages: string[]) => {
   );
 
   if (packagesToInstall.length === 0) {
-    console.log(chalk.green("✅ All dependencies are already installed"));
     return;
   }
 
-  if (packagesToInstall.length < packages.length) {
-    const alreadyInstalled = packages.filter((pkg) =>
-      installedPackages.includes(pkg)
-    );
-    console.log(
-      chalk.gray(`📦 Already installed: ${alreadyInstalled.join(", ")}`)
-    );
-  }
-
-  console.log(
-    chalk.yellow(
-      `📦 Installing dependencies: ${packagesToInstall.join(" ")}...`
-    )
-  );
+  // Simplify installation message
+  console.log(chalk.cyan(`📦 Installing ${packagesToInstall.join(", ")}...`));
 
   const packageManager = detectPackageManager();
   let command: string;
@@ -104,9 +90,8 @@ export const installPackages = async (packages: string[]) => {
   }
 
   try {
-    console.log(chalk.gray(`Using ${packageManager} to install...`));
     execSync(command, { stdio: "inherit", cwd: process.cwd() });
-    console.log(chalk.green("✅ Dependencies installed successfully!"));
+    console.log(chalk.green("✅ Dependencies installed successfully"));
   } catch (error) {
     console.error(chalk.red("❌ Failed to install dependencies"));
 
@@ -114,11 +99,8 @@ export const installPackages = async (packages: string[]) => {
       console.log(chalk.gray(`Error: ${error.message}`));
     }
 
-    console.log(chalk.yellow("\n💡 Troubleshooting tips:"));
-    console.log(chalk.gray("• Make sure you have internet connection"));
-    console.log(chalk.gray("• Check if the package names are correct"));
-    console.log(chalk.gray(`• Try running: ${command}`));
-    console.log(chalk.gray("• Clear your package manager cache if needed"));
+    console.log(chalk.yellow("\n💡 You can install them manually:"));
+    console.log(chalk.gray(`   ${command}`));
 
     const { shouldContinue } = await inquirer.prompt([
       {

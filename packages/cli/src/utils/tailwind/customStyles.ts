@@ -1,140 +1,158 @@
 import { promises as fs } from "fs";
 import path from "path";
 import chalk from "chalk";
-import { checkFileExists } from "../fileHelper";
 import { isTailwindV4OrLater, getTailwindVersion } from "./detect";
 
-// Custom color palette for the design system
+// Enhanced custom color palette for the design system
 const customColorPalette = {
+  primary: {
+    50: "#F1F2F3",
+    100: "#E1E4EA",
+    200: "#C5CDDD",
+    300: "#9FB3DB",
+    400: "#7296DF",
+    500: "#427EF5",
+    600: "#0B5CFE",
+    700: "#0049DA",
+    800: "#0039AB",
+    900: "#002A7C",
+    950: "#001A4E",
+  },
+
+  secondary: {
+    50: "#F1F3F3",
+    100: "#E1E9EA",
+    200: "#C6DADC",
+    300: "#A2D1D8",
+    400: "#77CEDA",
+    500: "#37D6EB",
+    600: "#0CD0EA",
+    700: "#02B2C9",
+    800: "#008DA0",
+    900: "#006674",
+    950: "#004049",
+  },
+
+  success: {
+    50: "#F0FDF4",
+    100: "#DCFCE7",
+    200: "#BBF7D0",
+    300: "#86EFAC",
+    400: "#4ADE80",
+    500: "#22C55E",
+    600: "#16A34A",
+    700: "#15803D",
+    800: "#166534",
+    900: "#14532D",
+  },
+
+  warning: {
+    50: "#FFFBEB",
+    100: "#FEF3C7",
+    200: "#FDE68A",
+    300: "#FCD34D",
+    400: "#FBBF24",
+    500: "#F59E0B",
+    600: "#D97706",
+    700: "#B45309",
+    800: "#92400E",
+    900: "#78350F",
+  },
+
+  error: {
+    50: "#FEF2F2",
+    100: "#FEE2E2",
+    200: "#FECACA",
+    300: "#FCA5A5",
+    400: "#F87171",
+    500: "#EF4444",
+    600: "#DC2626",
+    700: "#B91C1C",
+    800: "#991B1B",
+    900: "#7F1D1D",
+  },
+
   text: {
-    primary: "#171717",
-    secondary: "#525252",
-    muted: "#A3A3A3",
+    primary: "#111827",
+    secondary: "#6B7280",
+    muted: "#9CA3AF",
     inverse: "#FFFFFF",
   },
+
   background: {
     primary: "#FFFFFF",
-    secondary: "#F5F5F5",
+    secondary: "#F9FAFB",
     elevated: "#FFFFFF",
   },
+
   border: {
-    default: "#E5E5E5",
+    default: "#E5E7EB",
     focus: "#3B82F6",
-  },
-  interactive: {
-    primary: "#3B82F6",
-    primaryHover: "#2563EB",
-    secondary: "#6B7280",
-    secondaryHover: "#4B5563",
-  },
-  status: {
-    success: "#22C55E",
-    warning: "#F59E0B",
-    error: "#EF4444",
   },
 };
 
-/**
- * Generate TailwindCSS v3 configuration with custom colors
- */
-function generateV3Config(isTypeScript: boolean): string {
-  if (isTypeScript) {
-    return `import type { Config } from 'tailwindcss'
-
-const config: Config = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        text: {
-          primary: '${customColorPalette.text.primary}',
-          secondary: '${customColorPalette.text.secondary}',
-          muted: '${customColorPalette.text.muted}',
-          inverse: '${customColorPalette.text.inverse}',
-        },
-        background: {
-          primary: '${customColorPalette.background.primary}',
-          secondary: '${customColorPalette.background.secondary}',
-          elevated: '${customColorPalette.background.elevated}',
-        },
-        border: {
-          DEFAULT: '${customColorPalette.border.default}',
-          focus: '${customColorPalette.border.focus}',
-        },
-        interactive: {
-          primary: '${customColorPalette.interactive.primary}',
-          'primary-hover': '${customColorPalette.interactive.primaryHover}',
-          secondary: '${customColorPalette.interactive.secondary}',
-          'secondary-hover': '${customColorPalette.interactive.secondaryHover}',
-        },
-        status: {
-          success: '${customColorPalette.status.success}',
-          warning: '${customColorPalette.status.warning}',
-          error: '${customColorPalette.status.error}',
-        },
-      },
-    },
-  },
-  plugins: [],
-}
-
-export default config`;
-  } else {
-    return `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        text: {
-          primary: '${customColorPalette.text.primary}',
-          secondary: '${customColorPalette.text.secondary}',
-          muted: '${customColorPalette.text.muted}',
-          inverse: '${customColorPalette.text.inverse}',
-        },
-        background: {
-          primary: '${customColorPalette.background.primary}',
-          secondary: '${customColorPalette.background.secondary}',
-          elevated: '${customColorPalette.background.elevated}',
-        },
-        border: {
-          DEFAULT: '${customColorPalette.border.default}',
-          focus: '${customColorPalette.border.focus}',
-        },
-        interactive: {
-          primary: '${customColorPalette.interactive.primary}',
-          'primary-hover': '${customColorPalette.interactive.primaryHover}',
-          secondary: '${customColorPalette.interactive.secondary}',
-          'secondary-hover': '${customColorPalette.interactive.secondaryHover}',
-        },
-        status: {
-          success: '${customColorPalette.status.success}',
-          warning: '${customColorPalette.status.warning}',
-          error: '${customColorPalette.status.error}',
-        },
-      },
-    },
-  },
-  plugins: [],
-}`;
-  }
-}
-
-/**
- * Generate TailwindCSS v4 configuration with custom colors using @theme directive
- */
 function generateV4Config(): string {
-  return `@theme {
+  return `
+/* Verza UI Custom Color System */
+/* Go to https://verza-ui.com/docs/customization/colors for more information */
+@theme {
+  --color-primary-50: ${customColorPalette.primary[50]};
+  --color-primary-100: ${customColorPalette.primary[100]};
+  --color-primary-200: ${customColorPalette.primary[200]};
+  --color-primary-300: ${customColorPalette.primary[300]};
+  --color-primary-400: ${customColorPalette.primary[400]};
+  --color-primary-500: ${customColorPalette.primary[500]};
+  --color-primary-600: ${customColorPalette.primary[600]};
+  --color-primary-700: ${customColorPalette.primary[700]};
+  --color-primary-800: ${customColorPalette.primary[800]};
+  --color-primary-900: ${customColorPalette.primary[900]};
+  --color-primary-950: ${customColorPalette.primary[950]};
+  
+  --color-secondary-50: ${customColorPalette.secondary[50]};
+  --color-secondary-100: ${customColorPalette.secondary[100]};
+  --color-secondary-200: ${customColorPalette.secondary[200]};
+  --color-secondary-300: ${customColorPalette.secondary[300]};
+  --color-secondary-400: ${customColorPalette.secondary[400]};
+  --color-secondary-500: ${customColorPalette.secondary[500]};
+  --color-secondary-600: ${customColorPalette.secondary[600]};
+  --color-secondary-700: ${customColorPalette.secondary[700]};
+  --color-secondary-800: ${customColorPalette.secondary[800]};
+  --color-secondary-900: ${customColorPalette.secondary[900]};
+  --color-secondary-950: ${customColorPalette.secondary[950]};
+  
+  --color-success-50: ${customColorPalette.success[50]};
+  --color-success-100: ${customColorPalette.success[100]};
+  --color-success-200: ${customColorPalette.success[200]};
+  --color-success-300: ${customColorPalette.success[300]};
+  --color-success-400: ${customColorPalette.success[400]};
+  --color-success-500: ${customColorPalette.success[500]};
+  --color-success-600: ${customColorPalette.success[600]};
+  --color-success-700: ${customColorPalette.success[700]};
+  --color-success-800: ${customColorPalette.success[800]};
+  --color-success-900: ${customColorPalette.success[900]};
+  
+  --color-warning-50: ${customColorPalette.warning[50]};
+  --color-warning-100: ${customColorPalette.warning[100]};
+  --color-warning-200: ${customColorPalette.warning[200]};
+  --color-warning-300: ${customColorPalette.warning[300]};
+  --color-warning-400: ${customColorPalette.warning[400]};
+  --color-warning-500: ${customColorPalette.warning[500]};
+  --color-warning-600: ${customColorPalette.warning[600]};
+  --color-warning-700: ${customColorPalette.warning[700]};
+  --color-warning-800: ${customColorPalette.warning[800]};
+  --color-warning-900: ${customColorPalette.warning[900]};
+  
+  --color-error-50: ${customColorPalette.error[50]};
+  --color-error-100: ${customColorPalette.error[100]};
+  --color-error-200: ${customColorPalette.error[200]};
+  --color-error-300: ${customColorPalette.error[300]};
+  --color-error-400: ${customColorPalette.error[400]};
+  --color-error-500: ${customColorPalette.error[500]};
+  --color-error-600: ${customColorPalette.error[600]};
+  --color-error-700: ${customColorPalette.error[700]};
+  --color-error-800: ${customColorPalette.error[800]};
+  --color-error-900: ${customColorPalette.error[900]};
+  
   --color-text-primary: ${customColorPalette.text.primary};
   --color-text-secondary: ${customColorPalette.text.secondary};
   --color-text-muted: ${customColorPalette.text.muted};
@@ -146,432 +164,264 @@ function generateV4Config(): string {
   
   --color-border-default: ${customColorPalette.border.default};
   --color-border-focus: ${customColorPalette.border.focus};
-  
-  --color-interactive-primary: ${customColorPalette.interactive.primary};
-  --color-interactive-primary-hover: ${customColorPalette.interactive.primaryHover};
-  --color-interactive-secondary: ${customColorPalette.interactive.secondary};
-  --color-interactive-secondary-hover: ${customColorPalette.interactive.secondaryHover};
-  
-  --color-status-success: ${customColorPalette.status.success};
-  --color-status-warning: ${customColorPalette.status.warning};
-  --color-status-error: ${customColorPalette.status.error};
 }`;
 }
 
 /**
- * Generate example configuration for manual addition
+ * Check if file content contains TailwindCSS related imports
  */
-function generateExampleConfig(): string {
-  return `// Add these colors to your theme.extend.colors section:
-colors: {
-  text: {
-    primary: '${customColorPalette.text.primary}',
-    secondary: '${customColorPalette.text.secondary}',
-    muted: '${customColorPalette.text.muted}',
-    inverse: '${customColorPalette.text.inverse}',
-  },
-  background: {
-    primary: '${customColorPalette.background.primary}',
-    secondary: '${customColorPalette.background.secondary}',
-    elevated: '${customColorPalette.background.elevated}',
-  },
-  border: {
-    DEFAULT: '${customColorPalette.border.default}',
-    focus: '${customColorPalette.border.focus}',
-  },
-  interactive: {
-    primary: '${customColorPalette.interactive.primary}',
-    'primary-hover': '${customColorPalette.interactive.primaryHover}',
-    secondary: '${customColorPalette.interactive.secondary}',
-    'secondary-hover': '${customColorPalette.interactive.secondaryHover}',
-  },
-  status: {
-    success: '${customColorPalette.status.success}',
-    warning: '${customColorPalette.status.warning}',
-    error: '${customColorPalette.status.error}',
-  },
-}`;
+function hasTailwindImports(content: string): boolean {
+  const tailwindImports = [
+    // v4 import syntax
+    '@import "tailwindcss"',
+    "@import 'tailwindcss'",
+    '@import "tailwindcss";',
+    "@import 'tailwindcss';",
+
+    // v3 layered imports
+    '@import "tailwindcss/base"',
+    '@import "tailwindcss/components"',
+    '@import "tailwindcss/utilities"',
+    "@import 'tailwindcss/base'",
+    "@import 'tailwindcss/components'",
+    "@import 'tailwindcss/utilities'",
+
+    // v3 @tailwind directives
+    "@tailwind base",
+    "@tailwind components",
+    "@tailwind utilities",
+
+    // Other possible variants
+    '@import url("tailwindcss")',
+    "@import url('tailwindcss')",
+    '@import url("tailwindcss/base")',
+
+    // Preprocessor syntax (Sass/SCSS)
+    '@use "tailwindcss"',
+    "@use 'tailwindcss'",
+    '@forward "tailwindcss"',
+    "@forward 'tailwindcss'",
+
+    // Less syntax
+    '@import (css) "tailwindcss"',
+    "@import (css) 'tailwindcss'",
+  ];
+
+  // Normalize content (remove extra whitespace and newlines)
+  const normalizedContent = content.replace(/\s+/g, " ").toLowerCase();
+
+  return tailwindImports.some((importStatement) => {
+    const normalizedImport = importStatement.toLowerCase();
+    return normalizedContent.includes(normalizedImport);
+  });
 }
 
 /**
- * Parse and merge custom colors into existing Tailwind v3 configuration
+ * Smart search for CSS files containing TailwindCSS imports
  */
-async function mergeColorsIntoExistingConfig(
-  configPath: string,
-  isTypeScript: boolean
-): Promise<boolean> {
+async function findTailwindCSSFile(
+  projectPath: string
+): Promise<string | null> {
+  // Common CSS file locations (ordered by priority)
+  const priorityFiles = [
+    "src/app/globals.css",
+    "src/styles/globals.css",
+    "styles/globals.css",
+    "src/styles.css", // Common naming
+    "src/main.css", // Common naming
+    "index.css", // Root directory
+    "app.css", // Root directory
+    "style.css", // Root directory
+    "src/index.css",
+    "src/app.css",
+    "public/globals.css", // Other frameworks
+    "css/main.css", // Other frameworks
+    "assets/css/main.css", // Other frameworks
+  ];
+
+  // Step 1: Check priority file list
+  for (const file of priorityFiles) {
+    const fullPath = path.join(projectPath, file);
+    try {
+      const content = await fs.readFile(fullPath, "utf-8");
+
+      if (hasTailwindImports(content)) {
+        return fullPath;
+      }
+    } catch {
+      // File doesn't exist, continue to next one
+      continue;
+    }
+  }
+
+  // Step 2: Search all style files
+  console.log(chalk.gray("🔍 Searching for CSS files in project..."));
+
   try {
-    const existingConfig = await fs.readFile(configPath, "utf-8");
+    const allCssFiles = await findAllCSSFiles(projectPath);
 
-    // Check if our custom colors already exist (more specific check)
-    const hasVerzaColors =
-      existingConfig.includes("text:") &&
-      existingConfig.includes("background:") &&
-      existingConfig.includes("interactive:") &&
-      existingConfig.includes(customColorPalette.text.primary);
+    for (const cssFile of allCssFiles) {
+      try {
+        const content = await fs.readFile(cssFile, "utf-8");
 
-    if (hasVerzaColors) {
-      console.log(
-        chalk.yellow("⚠️  Verza UI colors already exist in Tailwind config")
-      );
-      return false;
-    }
-
-    // Validate that this is a valid Tailwind config file
-    if (
-      !existingConfig.includes("module.exports") &&
-      !existingConfig.includes("export default") &&
-      !existingConfig.includes("const config")
-    ) {
-      console.log(
-        chalk.yellow(
-          "⚠️  This does not appear to be a valid Tailwind config file"
-        )
-      );
-      return false;
-    }
-
-    // Try to find the colors section and merge intelligently
-    let updatedConfig = existingConfig;
-
-    const verzaColors = {
-      text: {
-        primary: customColorPalette.text.primary,
-        secondary: customColorPalette.text.secondary,
-        muted: customColorPalette.text.muted,
-        inverse: customColorPalette.text.inverse,
-      },
-      background: {
-        primary: customColorPalette.background.primary,
-        secondary: customColorPalette.background.secondary,
-        elevated: customColorPalette.background.elevated,
-      },
-      border: {
-        DEFAULT: customColorPalette.border.default,
-        focus: customColorPalette.border.focus,
-      },
-      interactive: {
-        primary: customColorPalette.interactive.primary,
-        "primary-hover": customColorPalette.interactive.primaryHover,
-        secondary: customColorPalette.interactive.secondary,
-        "secondary-hover": customColorPalette.interactive.secondaryHover,
-      },
-      status: {
-        success: customColorPalette.status.success,
-        warning: customColorPalette.status.warning,
-        error: customColorPalette.status.error,
-      },
-    };
-
-    // Convert colors to string format with proper indentation
-    const formatColors = (colors: any, indent: number = 8): string => {
-      const spaces = " ".repeat(indent);
-      let result = "";
-
-      for (const [key, value] of Object.entries(colors)) {
-        if (typeof value === "object" && value !== null) {
-          result += `${spaces}${key}: {\n`;
-          result += formatColors(value, indent + 2);
-          result += `${spaces}},\n`;
-        } else {
-          result += `${spaces}${key}: '${value}',\n`;
+        if (hasTailwindImports(content)) {
+          const relativePath = path.relative(projectPath, cssFile);
+          console.log(chalk.gray(`📄 Found TailwindCSS file: ${relativePath}`));
+          return cssFile;
         }
-      }
-
-      return result;
-    };
-
-    const verzaColorsString = formatColors(verzaColors).slice(0, -1); // Remove last comma
-
-    // Strategy 1: Look for existing colors section in theme.extend
-    const colorsInExtendRegex =
-      /(\s*extend:\s*{[^}]*?)(\s*colors:\s*{[^}]*(?:{[^}]*}[^}]*)*})/;
-    if (colorsInExtendRegex.test(updatedConfig)) {
-      updatedConfig = updatedConfig.replace(
-        colorsInExtendRegex,
-        (match, beforeColors, colorsSection) => {
-          // Extract existing colors content
-          const colorsContentMatch = colorsSection.match(
-            /colors:\s*{([^}]*(?:{[^}]*}[^}]*)*)}/
-          );
-          if (colorsContentMatch) {
-            const existingColorsContent = colorsContentMatch[1].trim();
-            const separator = existingColorsContent ? ",\n" : "\n";
-            return `${beforeColors}        colors: {\n${existingColorsContent}${separator}${verzaColorsString}\n        }`;
-          }
-          return match;
-        }
-      );
-    }
-    // Strategy 2: Look for theme.extend without colors
-    else {
-      const extendRegex = /(\s*extend:\s*{)([^}]*(?:{[^}]*}[^}]*)*)(})/;
-      if (extendRegex.test(updatedConfig)) {
-        updatedConfig = updatedConfig.replace(
-          extendRegex,
-          (match, openBrace, content, closeBrace) => {
-            const cleanContent = content.trim();
-            const separator = cleanContent ? ",\n" : "";
-            return `${openBrace}${content}${separator}        colors: {\n${verzaColorsString}\n        }\n    ${closeBrace}`;
-          }
-        );
-      }
-      // Strategy 3: Look for theme without extend
-      else {
-        const themeRegex = /(\s*theme:\s*{)([^}]*(?:{[^}]*}[^}]*)*)(})/;
-        if (themeRegex.test(updatedConfig)) {
-          updatedConfig = updatedConfig.replace(
-            themeRegex,
-            (match, openBrace, content, closeBrace) => {
-              const cleanContent = content.trim();
-              const separator = cleanContent ? ",\n" : "";
-              return `${openBrace}${content}${separator}    extend: {\n        colors: {\n${verzaColorsString}\n        }\n    }\n  ${closeBrace}`;
-            }
-          );
-        }
-        // Strategy 4: Add theme section to config object
-        else {
-          const configObjectRegex =
-            /(module\.exports\s*=\s*{|export\s+default\s+{|const\s+config[^=]*=\s*{)/;
-          if (configObjectRegex.test(updatedConfig)) {
-            updatedConfig = updatedConfig.replace(
-              configObjectRegex,
-              (match) => {
-                return `${match}\n  theme: {\n    extend: {\n        colors: {\n${verzaColorsString}\n        }\n    }\n  },`;
-              }
-            );
-          } else {
-            // Fallback: couldn't find a suitable place to insert
-            console.log(
-              chalk.yellow(
-                "⚠️  Could not find a suitable place to insert colors in the config file"
-              )
-            );
-            return false;
-          }
-        }
+      } catch {
+        continue;
       }
     }
-
-    // Validate that the change was made
-    if (updatedConfig === existingConfig) {
-      return false;
-    }
-
-    // Write the updated configuration
-    await fs.writeFile(configPath, updatedConfig);
-    return true;
   } catch (error) {
-    console.error("Error merging colors into existing config:", error);
-    return false;
+    console.log(chalk.yellow("⚠️ Could not search for CSS files"));
   }
+
+  console.log(chalk.yellow("⚠️ No TailwindCSS file found"));
+  return null;
 }
 
 /**
- * Detect if the project uses TypeScript for configuration
+ * Recursively search for all CSS-related files in the project
  */
-async function detectTypeScriptConfig(projectPath: string): Promise<boolean> {
+async function findAllCSSFiles(
+  dir: string,
+  maxDepth: number = 3,
+  currentDepth: number = 0
+): Promise<string[]> {
+  if (currentDepth >= maxDepth) return [];
+
+  const cssFiles: string[] = [];
+  const cssExtensions = [".css", ".scss", ".sass", ".less", ".styl", ".stylus"];
+  const excludedDirs = [
+    "node_modules",
+    ".git",
+    ".next",
+    "dist",
+    "build",
+    ".nuxt",
+    ".output",
+    "coverage",
+    ".nyc_output",
+    ".cache",
+    "tmp",
+    "temp",
+  ];
+
   try {
-    // Check for existing TypeScript config files
-    const tsConfigExists = await fs
-      .access(path.join(projectPath, "tsconfig.json"))
-      .then(() => true)
-      .catch(() => false);
-    const existingTsConfig = await fs
-      .access(path.join(projectPath, "tailwind.config.ts"))
-      .then(() => true)
-      .catch(() => false);
+    const entries = await fs.readdir(dir, { withFileTypes: true });
 
-    return tsConfigExists || existingTsConfig;
-  } catch {
-    return false;
-  }
-}
+    // Process files first, then directories (performance optimization)
+    const files = entries.filter((entry) => entry.isFile());
+    const directories = entries.filter((entry) => entry.isDirectory());
 
-/**
- * Apply custom styles to TailwindCSS configuration based on version
- */
-export async function applyCustomStyles(
-  projectPath: string,
-  isTailwindV4: boolean
-): Promise<void> {
-  try {
-    if (isTailwindV4) {
-      // For v4, add custom styles to the main CSS file
-      // 優先搜尋 Vite 常用的 CSS 文件位置
-      const cssFiles = [
-        "src/index.css", // Vite + React 默認
-        "src/app.css", // Vite 常用 (用戶提到的)
-        "src/style.css", // Vite 默認模板
-        "src/styles.css", // 常用命名
-        "src/main.css", // 常用命名
-        "index.css", // 根目錄
-        "app.css", // 根目錄 (用戶提到的)
-        "style.css", // 根目錄
-        "src/app/globals.css", // Next.js App Router
-        "src/styles/globals.css", // Next.js 常用
-        "styles/globals.css", // Next.js 常用
-        "public/globals.css", // 其他框架
-        "css/main.css", // 其他框架
-        "assets/css/main.css", // 其他框架
-      ];
-
-      let cssFilePath: string | null = null;
-
-      // Find existing CSS file
-      for (const file of cssFiles) {
-        const fullPath = path.join(projectPath, file);
-        try {
-          await fs.access(fullPath);
-          cssFilePath = fullPath;
-          console.log(chalk.gray(`📄 Found CSS file: ${file}`));
-          break;
-        } catch {
-          continue;
-        }
+    // Check current directory for style files
+    for (const file of files) {
+      const ext = path.extname(file.name).toLowerCase();
+      if (cssExtensions.includes(ext)) {
+        cssFiles.push(path.join(dir, file.name));
       }
-
-      // If no CSS file found, create one based on project structure
-      if (!cssFilePath) {
-        // 檢查是否為 Next.js 項目 (有 app 目錄)
-        const hasAppDir = await fs
-          .access(path.join(projectPath, "app"))
-          .then(() => true)
-          .catch(() => false);
-        // 檢查是否有 src 目錄
-        const hasSrcDir = await fs
-          .access(path.join(projectPath, "src"))
-          .then(() => true)
-          .catch(() => false);
-
-        if (hasAppDir) {
-          // Next.js App Router
-          cssFilePath = path.join(projectPath, "src/app/globals.css");
-        } else if (hasSrcDir) {
-          // Vite 或其他使用 src 的項目
-          cssFilePath = path.join(projectPath, "src/index.css");
-        } else {
-          // 根目錄項目
-          cssFilePath = path.join(projectPath, "index.css");
-        }
-
-        await fs.mkdir(path.dirname(cssFilePath), { recursive: true });
-        console.log(
-          chalk.gray(
-            `📄 Will create CSS file: ${path.relative(
-              projectPath,
-              cssFilePath
-            )}`
-          )
-        );
-      }
-
-      // Read existing content or create new
-      let existingContent = "";
-      try {
-        existingContent = await fs.readFile(cssFilePath, "utf-8");
-      } catch {
-        // File doesn't exist, will create new
-      }
-
-      // Check if custom styles already exist
-      if (existingContent.includes("@theme {")) {
-        console.log(
-          chalk.yellow("⚠️  Custom styles already exist in CSS file")
-        );
-        return;
-      }
-
-      // Check if @import "tailwindcss" exists
-      const hasTailwindImport = existingContent.includes(
-        '@import "tailwindcss"'
-      );
-
-      const v4Config = generateV4Config();
-
-      let finalContent = "";
-
-      if (existingContent.trim()) {
-        if (!hasTailwindImport) {
-          // Add @import at the beginning if it doesn't exist
-          finalContent = `@import "tailwindcss";\n\n${existingContent}\n\n${v4Config}`;
-        } else {
-          // Just append the theme config
-          finalContent = existingContent + "\n\n" + v4Config;
-        }
-      } else {
-        // New file, add both import and theme
-        finalContent = `@import "tailwindcss";\n\n${v4Config}`;
-      }
-
-      await fs.writeFile(cssFilePath, finalContent);
-
-      console.log(
-        chalk.green(
-          `✅ Applied custom styles to ${path.relative(
-            projectPath,
-            cssFilePath
-          )}`
-        )
-      );
-    } else {
-      // For v3, update or create tailwind.config file
-      const isTypeScript = await detectTypeScriptConfig(projectPath);
-      const configFileName = isTypeScript
-        ? "tailwind.config.ts"
-        : "tailwind.config.js";
-      const configPath = path.join(projectPath, configFileName);
-
-      // Check if config file exists
-      let configExists = false;
-      try {
-        await fs.access(configPath);
-        configExists = true;
-      } catch {
-        // Config file doesn't exist
-      }
-
-      if (configExists) {
-        // Try to merge colors into existing config
-        console.log(
-          chalk.blue(
-            "🔄 Merging Verza UI colors into existing Tailwind config..."
-          )
-        );
-
-        const mergeSuccess = await mergeColorsIntoExistingConfig(
-          configPath,
-          isTypeScript
-        );
-
-        if (mergeSuccess) {
-          console.log(
-            chalk.green(
-              `✅ Successfully merged custom colors into ${configPath}`
-            )
-          );
-        } else {
-          console.log(
-            chalk.yellow(
-              "⚠️  Could not automatically merge colors. Please manually add the following colors to your theme.extend.colors section:"
-            )
-          );
-
-          // Display the colors that need to be added manually
-          console.log(chalk.gray("\nColors to add:"));
-          console.log(chalk.gray("```javascript"));
-          console.log(chalk.gray(generateExampleConfig()));
-          console.log(chalk.gray("```"));
-        }
-        return;
-      }
-
-      // Generate new config
-      const v3Config = generateV3Config(isTypeScript);
-      await fs.writeFile(configPath, v3Config);
-
-      console.log(chalk.green(`✅ Applied custom styles to ${configPath}`));
     }
+
+    // Recursively check subdirectories
+    for (const directory of directories) {
+      if (
+        !excludedDirs.includes(directory.name) &&
+        !directory.name.startsWith(".")
+      ) {
+        const fullPath = path.join(dir, directory.name);
+        const nestedFiles = await findAllCSSFiles(
+          fullPath,
+          maxDepth,
+          currentDepth + 1
+        );
+        cssFiles.push(...nestedFiles);
+      }
+    }
+  } catch {
+    // Ignore permission errors etc
+  }
+
+  return cssFiles;
+}
+
+/**
+ * Decide the best CSS file creation location based on project structure
+ */
+async function decideBestCSSLocation(projectPath: string): Promise<string> {
+  // Check if it's a Next.js project (has app directory)
+  const hasAppDir = await fs
+    .access(path.join(projectPath, "app"))
+    .then(() => true)
+    .catch(() => false);
+
+  // Check if there's a src directory
+  const hasSrcDir = await fs
+    .access(path.join(projectPath, "src"))
+    .then(() => true)
+    .catch(() => false);
+
+  if (hasAppDir) {
+    // Next.js App Router
+    return path.join(projectPath, "app/globals.css");
+  } else if (hasSrcDir) {
+    // Vite or other projects using src
+    return path.join(projectPath, "src/index.css");
+  } else {
+    // Root directory project
+    return path.join(projectPath, "index.css");
+  }
+}
+
+/**
+ * Apply custom styles to TailwindCSS v4 configuration
+ */
+export async function applyCustomStyles(projectPath: string): Promise<void> {
+  try {
+    let cssFilePath = await findTailwindCSSFile(projectPath);
+
+    // If no TailwindCSS file found, create one based on project structure
+    if (!cssFilePath) {
+      cssFilePath = await decideBestCSSLocation(projectPath);
+      await fs.mkdir(path.dirname(cssFilePath), { recursive: true });
+    }
+
+    // Read existing content or create new
+    let existingContent = "";
+    try {
+      existingContent = await fs.readFile(cssFilePath, "utf-8");
+    } catch {
+      // File doesn't exist, will create new
+    }
+
+    // Check if custom styles already exist
+    if (existingContent.includes("@theme {")) {
+      return;
+    }
+
+    // Check if @import "tailwindcss" exists
+    const hasTailwindImport = existingContent.includes('@import "tailwindcss"');
+
+    const v4Config = generateV4Config();
+
+    let finalContent = "";
+
+    if (existingContent.trim()) {
+      if (!hasTailwindImport) {
+        // Add @import at the beginning if it doesn't exist
+        finalContent = `@import "tailwindcss";\n\n${existingContent}\n${v4Config}`;
+      } else {
+        // Just append the theme config
+        finalContent = existingContent + "\n" + v4Config;
+      }
+    } else {
+      // New file, add both import and theme
+      finalContent = `@import "tailwindcss";\n\n${v4Config}`;
+    }
+
+    await fs.writeFile(cssFilePath, finalContent);
+
+    console.log(chalk.green(`✅ Custom colors configured`));
   } catch (error) {
     console.error("Error applying custom styles:", error);
     throw error;
@@ -579,29 +429,26 @@ export async function applyCustomStyles(
 }
 
 /**
- * Main function to setup Tailwind custom styles
- * This is the function called from init.ts
+ * Main function to setup Tailwind custom styles for v4
  */
 export async function setupTailwindCustomStyles(): Promise<void> {
   const version = getTailwindVersion();
   const isV4 = isTailwindV4OrLater();
   const projectPath = process.cwd();
 
-  console.log(chalk.blue(`🎨 Setting up Tailwind custom styles`));
-  console.log(chalk.gray(`   Detected version: ${version || "Not found"}`));
-  console.log(chalk.gray(`   Is v4 or later: ${isV4}`));
-  console.log(
-    chalk.gray(
-      `   Will use: ${
-        isV4 ? "v4 (@theme directive)" : "v3 (config file)"
-      } configuration`
-    )
-  );
+  if (!isV4) {
+    console.log(
+      chalk.yellow("⚠️  TailwindCSS v4 is required for custom colors")
+    );
+    return;
+  }
+
+  console.log(chalk.cyan(`🎨 Setting up custom colors...`));
 
   try {
-    await applyCustomStyles(projectPath, isV4);
+    await applyCustomStyles(projectPath);
   } catch (error) {
-    console.error(chalk.red("❌ Failed to setup custom styles:"), error);
+    console.error(chalk.red("❌ Failed to setup custom colors:"), error);
     throw error;
   }
 }
@@ -611,41 +458,4 @@ export async function setupTailwindCustomStyles(): Promise<void> {
  */
 export function getCustomColorPalette() {
   return customColorPalette;
-}
-
-/**
- * Test function for merging colors (for development/testing purposes)
- */
-export async function testMergeColors(
-  configContent: string,
-  isTypeScript: boolean = false
-): Promise<string | null> {
-  const tempPath = path.join(
-    process.cwd(),
-    `temp-tailwind-config-${Date.now()}.js`
-  );
-
-  try {
-    // Create a temporary file for testing
-    await fs.writeFile(tempPath, configContent);
-
-    const success = await mergeColorsIntoExistingConfig(tempPath, isTypeScript);
-
-    if (success) {
-      const result = await fs.readFile(tempPath, "utf-8");
-      return result;
-    } else {
-      return null;
-    }
-  } catch (error) {
-    console.error("Test merge failed:", error);
-    return null;
-  } finally {
-    // Always clean up the temporary file
-    try {
-      await fs.unlink(tempPath);
-    } catch (cleanupError) {
-      // Ignore cleanup errors
-    }
-  }
 }
