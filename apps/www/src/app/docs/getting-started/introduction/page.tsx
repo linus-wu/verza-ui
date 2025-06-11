@@ -1,7 +1,7 @@
 import { PackageManagerTabs } from "@/components/common/PackageManagerTabs";
 import CodeArea from "@/components/common/CodeArea";
 
-export default function DocsPage() {
+export default function IntroductionPage() {
   return (
     <div className="max-w-4xl text-slate-300">
       <div className="mb-8">
@@ -41,12 +41,12 @@ export default function DocsPage() {
           code={`import { Button, Input } from 'verza-ui';
 
 function App() {
-  return (
-    <div>
-      <Input placeholder="Enter text..." />
-      <Button>Click me</Button>
-    </div>
-  );
+return (
+<div>
+  <Input placeholder="Enter text..." />
+  <Button>Click me</Button>
+</div>
+);
 }`}
           language="jsx"
         />

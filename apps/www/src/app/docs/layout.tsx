@@ -8,7 +8,7 @@ export default function DocsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="">
+    <div className="flex">
       {/* Sidebar Navigation */}
       <aside className="fixed hidden min-h-screen border-r border-slate-800 bg-slate-950 md:block md:w-64 md:flex-shrink-0">
         <nav className="flex h-full flex-col gap-5 p-4">
@@ -19,7 +19,7 @@ export default function DocsLayout({
             <ul className="space-y-1">
               <li>
                 <Link
-                  href="/docs"
+                  href="/docs/getting-started/introduction"
                   className="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
                 >
                   Introduction
@@ -27,10 +27,18 @@ export default function DocsLayout({
               </li>
               <li>
                 <Link
-                  href="/docs/installation"
+                  href="/docs/getting-started/installation"
                   className="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
                 >
                   Installation
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/docs/getting-started/cli"
+                  className="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
+                >
+                  CLI
                 </Link>
               </li>
             </ul>
